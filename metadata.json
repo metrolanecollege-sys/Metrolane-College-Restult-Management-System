@@ -1,0 +1,6 @@
+{
+  "name": "Metrolane College Result Management System",
+  "description": "Comprehensive School Management Result System for Metrolane College of Health, Science & Technology with role-based portals for Admins, Lecturers, Exam Officers, HODs, Registrars, and Students.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

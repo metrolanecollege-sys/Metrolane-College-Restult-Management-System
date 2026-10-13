@@ -1,0 +1,139 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserRole() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? getUserData().role
+        : null;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'metrolane.college@gmail.com' ||
+        getUserRole() == 'super_admin'
+      );
+    }
+
+    function isRegistrar() {
+      return isSuperAdmin() || (isAuthenticated() && getUserRole() == 'registrar');
+    }
+
+    function isExamOfficer() {
+      return isSuperAdmin() || (isAuthenticated() && getUserRole() == 'exam_officer');
+    }
+
+    function isHOD() {
+      return isSuperAdmin() || (isAuthenticated() && getUserRole() == 'hod');
+    }
+
+    function isLecturer() {
+      return isSuperAdmin() || (isAuthenticated() && getUserRole() == 'lecturer');
+    }
+
+    function isStudent() {
+      return isAuthenticated() && getUserRole() == 'student';
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        isSuperAdmin() ||
+        isRegistrar() ||
+        isExamOfficer() ||
+        isHOD()
+      );
+      allow create: if isSuperAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      allow update: if isSuperAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // Students collection
+    match /students/{studentId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isSuperAdmin() || isRegistrar();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Programmes collection
+    match /programmes/{programmeId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+
+    // Courses collection
+    match /courses/{courseId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin() || isRegistrar();
+    }
+
+    // Course Registrations collection
+    match /courseRegistrations/{registrationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isSuperAdmin() || isRegistrar();
+    }
+
+    // Results collection
+    match /results/{resultId} {
+      allow read: if isAuthenticated();
+      allow create: if isLecturer() || isSuperAdmin();
+      allow update: if isLecturer() || isHOD() || isExamOfficer() || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Semester Results collection
+    match /semesterResults/{semesterResultId} {
+      allow read: if isAuthenticated();
+      allow write: if isExamOfficer() || isSuperAdmin();
+    }
+
+    // Sessions collection
+    match /sessions/{sessionId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+
+    // Signatures collection
+    match /signatures/{signatureId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Result PINs collection
+    match /resultPins/{pinId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Audit logs collection
+    match /auditLogs/{logId} {
+      allow read: if isSuperAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    // Settings collection
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+  }
+}

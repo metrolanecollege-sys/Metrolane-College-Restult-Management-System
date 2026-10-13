@@ -1,0 +1,288 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System user account with role-based access",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["super_admin", "registrar", "exam_officer", "hod", "lecturer", "student"] },
+        "fullName": { "type": "string" },
+        "phone": { "type": "string" },
+        "department": { "type": "string" },
+        "profilePhoto": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "role", "fullName", "isActive"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Enrolled student academic and demographic profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "matricNumber": { "type": "string" },
+        "firstName": { "type": "string" },
+        "middleName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "gender": { "type": "string", "enum": ["Male", "Female"] },
+        "dateOfBirth": { "type": "string" },
+        "stateOfOrigin": { "type": "string" },
+        "lga": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "passportPhoto": { "type": "string" },
+        "programme": { "type": "string" },
+        "department": { "type": "string" },
+        "level": { "type": "string", "enum": ["ND1", "ND2", "HND1", "HND2"] },
+        "admissionYear": { "type": "string" },
+        "currentSession": { "type": "string" },
+        "currentSemester": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "graduated", "withdrawn", "suspended", "deferred"] },
+        "clearanceStatus": { "type": "object" },
+        "nextOfKin": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["matricNumber", "firstName", "lastName", "programme", "level", "currentSession", "currentSemester", "status"]
+    },
+    "Programme": {
+      "title": "Programme",
+      "description": "Academic programme of study",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "degreeType": { "type": "string", "enum": ["ND", "HND"] },
+        "duration": { "type": "number" },
+        "department": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["name", "code", "degreeType", "department", "isActive"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Course offered by the college",
+      "type": "object",
+      "properties": {
+        "courseCode": { "type": "string" },
+        "courseTitle": { "type": "string" },
+        "creditUnit": { "type": "number" },
+        "courseType": { "type": "string", "enum": ["Core", "Elective", "General Studies"] },
+        "programme": { "type": "string" },
+        "level": { "type": "string" },
+        "semester": { "type": "string" },
+        "caWeight": { "type": "number" },
+        "examWeight": { "type": "number" },
+        "prerequisite": { "type": "string" },
+        "lecturerId": { "type": "string" },
+        "lecturerName": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["courseCode", "courseTitle", "creditUnit", "programme", "level", "semester", "isActive"]
+    },
+    "CourseRegistration": {
+      "title": "CourseRegistration",
+      "description": "Student course enrollment for a session and semester",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "matricNumber": { "type": "string" },
+        "courseId": { "type": "string" },
+        "courseCode": { "type": "string" },
+        "courseTitle": { "type": "string" },
+        "creditUnit": { "type": "number" },
+        "session": { "type": "string" },
+        "semester": { "type": "string" },
+        "level": { "type": "string" },
+        "registeredAt": { "type": "string" },
+        "status": { "type": "string", "enum": ["registered", "dropped"] }
+      },
+      "required": ["studentId", "matricNumber", "courseId", "session", "semester", "status"]
+    },
+    "Result": {
+      "title": "Result",
+      "description": "Academic course score, grade and approval status",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "matricNumber": { "type": "string" },
+        "studentName": { "type": "string" },
+        "courseId": { "type": "string" },
+        "courseCode": { "type": "string" },
+        "courseTitle": { "type": "string" },
+        "creditUnit": { "type": "number" },
+        "session": { "type": "string" },
+        "semester": { "type": "string" },
+        "level": { "type": "string" },
+        "programme": { "type": "string" },
+        "caScore": { "type": "number" },
+        "examScore": { "type": "number" },
+        "totalScore": { "type": "number" },
+        "grade": { "type": "string" },
+        "gradePoint": { "type": "number" },
+        "qualityPoint": { "type": "number" },
+        "remark": { "type": "string", "enum": ["Pass", "Fail"] },
+        "isCarryover": { "type": "boolean" },
+        "enteredBy": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "submitted", "hod_approved", "exam_officer_approved", "published"] },
+        "approvals": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["studentId", "matricNumber", "courseId", "session", "semester", "caScore", "examScore", "status"]
+    },
+    "SemesterResult": {
+      "title": "SemesterResult",
+      "description": "Aggregated GPA, CGPA and Academic Standing summary",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "matricNumber": { "type": "string" },
+        "session": { "type": "string" },
+        "semester": { "type": "string" },
+        "level": { "type": "string" },
+        "programme": { "type": "string" },
+        "totalCreditUnits": { "type": "number" },
+        "totalQualityPoints": { "type": "number" },
+        "gpa": { "type": "number" },
+        "cgpa": { "type": "number" },
+        "totalCreditUnitsCumulative": { "type": "number" },
+        "totalQualityPointsCumulative": { "type": "number" },
+        "remark": { "type": "string" },
+        "classification": { "type": "string" }
+      },
+      "required": ["studentId", "matricNumber", "session", "semester", "gpa", "cgpa"]
+    },
+    "Session": {
+      "title": "Session",
+      "description": "Academic calendar session",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "isCurrent": { "type": "boolean" },
+        "currentSemester": { "type": "string" },
+        "registrationOpen": { "type": "boolean" },
+        "resultEntryOpen": { "type": "boolean" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" }
+      },
+      "required": ["name", "isCurrent"]
+    },
+    "Signature": {
+      "title": "Signature",
+      "description": "Authorized signatory digital signature image",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string" },
+        "signatureImage": { "type": "string" },
+        "name": { "type": "string" },
+        "uploadedAt": { "type": "string" }
+      },
+      "required": ["userId", "role", "signatureImage", "name"]
+    },
+    "ResultPin": {
+      "title": "ResultPin",
+      "description": "Scratch PIN for student result slip viewing",
+      "type": "object",
+      "properties": {
+        "pin": { "type": "string" },
+        "serialNumber": { "type": "string" },
+        "studentId": { "type": "string" },
+        "isUsed": { "type": "boolean" },
+        "usedAt": { "type": "string" },
+        "session": { "type": "string" },
+        "semester": { "type": "string" },
+        "generatedBy": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["pin", "serialNumber", "isUsed"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable system audit trail",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "role": { "type": "string" },
+        "action": { "type": "string" },
+        "description": { "type": "string" },
+        "targetCollection": { "type": "string" },
+        "targetDocumentId": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["userId", "action", "description", "timestamp"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "College and system configuration",
+      "type": "object",
+      "properties": {
+        "schoolName": { "type": "string" },
+        "motto": { "type": "string" },
+        "currentSession": { "type": "string" },
+        "currentSemester": { "type": "string" },
+        "gradingSystem": { "type": "object" },
+        "caExamRatio": { "type": "object" },
+        "resultPublished": { "type": "boolean" }
+      },
+      "required": ["schoolName", "currentSession", "currentSemester"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and credentials"
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Student biological and academic records"
+    },
+    "/programmes/{programmeId}": {
+      "schema": "Programme",
+      "description": "College degree programmes"
+    },
+    "/courses/{courseId}": {
+      "schema": "Course",
+      "description": "Curriculum courses per programme"
+    },
+    "/courseRegistrations/{registrationId}": {
+      "schema": "CourseRegistration",
+      "description": "Course registrations per session/semester"
+    },
+    "/results/{resultId}": {
+      "schema": "Result",
+      "description": "Exam and CA course results"
+    },
+    "/semesterResults/{semesterResultId}": {
+      "schema": "SemesterResult",
+      "description": "Aggregated GPA/CGPA calculations"
+    },
+    "/sessions/{sessionId}": {
+      "schema": "Session",
+      "description": "Academic sessions and semesters"
+    },
+    "/signatures/{signatureId}": {
+      "schema": "Signature",
+      "description": "Digital signatures of officials"
+    },
+    "/resultPins/{pinId}": {
+      "schema": "ResultPin",
+      "description": "Security scratch PINs for result checking"
+    },
+    "/auditLogs/{logId}": {
+      "schema": "AuditLog",
+      "description": "System security audit trail"
+    },
+    "/settings/{settingId}": {
+      "schema": "Setting",
+      "description": "System global settings"
+    }
+  }
+}
