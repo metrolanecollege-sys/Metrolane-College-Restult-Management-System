@@ -180,15 +180,26 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ activeTab, onSelec
       {currentView === 'dashboard' && (
         <div className="space-y-6 animate-in fade-in">
           {/* Key Stat Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs cursor-pointer hover:border-[#F47B20]" onClick={() => handleTabChange('academic_profile')}>
               <span className="text-[11px] text-gray-400 font-bold uppercase block">Current Level / Session</span>
               <span className="text-base font-black text-gray-900 block mt-1">{currentStudent?.level}</span>
               <span className="text-xs text-gray-500">{settings.currentSession} ({settings.currentSemester})</span>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs cursor-pointer hover:border-[#F47B20]" onClick={() => handleTabChange('check_result')}>
-              <span className="text-[11px] text-gray-400 font-bold uppercase block">Cumulative CGPA</span>
+            {/* Previous CGPA for Year 2 */}
+            <div className="bg-white p-5 rounded-xl border border-amber-200 bg-amber-50/30 shadow-xs">
+              <span className="text-[11px] text-amber-800 font-bold uppercase block">Previous CGPA (Yr 1)</span>
+              <span className="text-2xl font-black text-amber-900 block mt-1">
+                {studentSummary.previousCgpa ? studentSummary.previousCgpa.toFixed(2) : 'N/A (Yr 1)'}
+              </span>
+              <span className="text-xs text-amber-700 font-semibold">
+                {studentSummary.previousCreditUnits ? `${studentSummary.previousCreditUnits} Prev Units` : 'Initial Year'}
+              </span>
+            </div>
+
+            <div className="bg-white p-5 rounded-xl border border-purple-200 bg-purple-50/20 shadow-xs cursor-pointer hover:border-[#5B4FC4]" onClick={() => handleTabChange('check_result')}>
+              <span className="text-[11px] text-[#5B4FC4] font-bold uppercase block">Current CGPA (Cumulative)</span>
               <span className="text-2xl font-black text-[#5B4FC4] block mt-1">{studentSummary.cgpa.toFixed(2)}</span>
               <span className="text-xs text-emerald-700 font-bold uppercase">{studentSummary.classification}</span>
             </div>
@@ -406,7 +417,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ activeTab, onSelec
               </div>
 
               {/* Performance Cards */}
-              <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
+              <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-xs">
                 <div>
                   <span className="text-gray-500 uppercase text-[10px] font-bold block">Credit Units</span>
                   <span className="text-lg font-black text-gray-900">{studentSummary.totalCreditUnits}</span>
@@ -416,11 +427,17 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ activeTab, onSelec
                   <span className="text-lg font-black text-gray-900">{studentSummary.totalQualityPoints.toFixed(2)}</span>
                 </div>
                 <div>
+                  <span className="text-amber-800 uppercase text-[10px] font-bold block">Previous CGPA</span>
+                  <span className="text-lg font-black text-amber-900">
+                    {studentSummary.previousCgpa ? studentSummary.previousCgpa.toFixed(2) : 'N/A (Yr 1)'}
+                  </span>
+                </div>
+                <div>
                   <span className="text-gray-500 uppercase text-[10px] font-bold block">Semester GPA</span>
                   <span className="text-lg font-black text-[#E8601C]">{studentSummary.gpa.toFixed(2)}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500 uppercase text-[10px] font-bold block">Cumulative CGPA</span>
+                  <span className="text-[#5B4FC4] uppercase text-[10px] font-bold block">Current CGPA</span>
                   <span className="text-lg font-black text-[#5B4FC4]">{studentSummary.cgpa.toFixed(2)}</span>
                 </div>
               </div>

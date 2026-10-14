@@ -65,7 +65,7 @@ service cloud.firestore {
     // Students collection
     match /students/{studentId} {
       allow read: if isAuthenticated();
-      allow create, update: if isSuperAdmin() || isRegistrar();
+      allow create, update: if isSuperAdmin() || isRegistrar() || isLecturer() || isHOD();
       allow delete: if isSuperAdmin();
     }
 

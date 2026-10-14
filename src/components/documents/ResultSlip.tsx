@@ -142,16 +142,24 @@ export const ResultSlip: React.FC<ResultSlipProps> = ({
     doc.rect(15, summaryY, pageWidth - 30, 14, 'FD');
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
+    doc.setFontSize(8.5);
     doc.setTextColor(26, 26, 46);
-    doc.text(`Total Credit Units: ${summary.totalCreditUnits}`, 20, summaryY + 6);
-    doc.text(`Total Quality Points: ${summary.totalQualityPoints.toFixed(2)}`, 65, summaryY + 6);
-    doc.text(`Semester GPA: ${summary.gpa.toFixed(2)}`, 120, summaryY + 6);
-    doc.text(`Cumulative CGPA: ${summary.cgpa.toFixed(2)}`, 160, summaryY + 6);
+    if (summary.previousCgpa) {
+      doc.text(`Total Units: ${summary.totalCreditUnits}`, 18, summaryY + 5.5);
+      doc.text(`Total QP: ${summary.totalQualityPoints.toFixed(1)}`, 54, summaryY + 5.5);
+      doc.text(`Prev CGPA (Yr 1): ${summary.previousCgpa.toFixed(2)}`, 88, summaryY + 5.5);
+      doc.text(`Sem GPA: ${summary.gpa.toFixed(2)}`, 134, summaryY + 5.5);
+      doc.text(`Current CGPA: ${summary.cgpa.toFixed(2)}`, 168, summaryY + 5.5);
+    } else {
+      doc.text(`Total Credit Units: ${summary.totalCreditUnits}`, 20, summaryY + 6);
+      doc.text(`Total Quality Points: ${summary.totalQualityPoints.toFixed(2)}`, 65, summaryY + 6);
+      doc.text(`Semester GPA: ${summary.gpa.toFixed(2)}`, 120, summaryY + 6);
+      doc.text(`Cumulative CGPA: ${summary.cgpa.toFixed(2)}`, 160, summaryY + 6);
+    }
 
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setTextColor(232, 96, 28);
-    doc.text(`Classification: ${summary.classification.toUpperCase()}`, 20, summaryY + 11);
+    doc.text(`Classification: ${summary.classification.toUpperCase()}`, 18, summaryY + 11);
     doc.text(`Academic Standing: ${summary.remark === 'Pass' ? 'GOOD STANDING (PASS)' : summary.remark}`, 120, summaryY + 11);
 
     // Signatures Section
@@ -337,7 +345,7 @@ export const ResultSlip: React.FC<ResultSlipProps> = ({
 
           {/* Academic Calculation Performance Summary */}
           <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 my-6 relative z-10">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+            <div className={`grid grid-cols-2 ${summary.previousCgpa ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} gap-3 text-center`}>
               <div className="border-r border-amber-200/80 last:border-0">
                 <span className="text-[11px] font-semibold uppercase text-amber-800 block">Total Credit Units</span>
                 <span className="text-lg font-black text-gray-900">{summary.totalCreditUnits}</span>
@@ -346,12 +354,18 @@ export const ResultSlip: React.FC<ResultSlipProps> = ({
                 <span className="text-[11px] font-semibold uppercase text-amber-800 block">Total Quality Points</span>
                 <span className="text-lg font-black text-gray-900">{summary.totalQualityPoints.toFixed(2)}</span>
               </div>
+              {summary.previousCgpa ? (
+                <div className="border-r border-amber-200/80 last:border-0">
+                  <span className="text-[11px] font-semibold uppercase text-amber-800 block">Previous CGPA (Yr 1)</span>
+                  <span className="text-xl font-black text-amber-900">{summary.previousCgpa.toFixed(2)}</span>
+                </div>
+              ) : null}
               <div className="border-r border-amber-200/80 last:border-0">
                 <span className="text-[11px] font-semibold uppercase text-amber-800 block">Semester GPA</span>
                 <span className="text-xl font-black text-[#E8601C]">{summary.gpa.toFixed(2)}</span>
               </div>
               <div>
-                <span className="text-[11px] font-semibold uppercase text-amber-800 block">Cumulative CGPA</span>
+                <span className="text-[11px] font-semibold uppercase text-[#5B4FC4] block">Current CGPA</span>
                 <span className="text-xl font-black text-[#5B4FC4]">{summary.cgpa.toFixed(2)}</span>
               </div>
             </div>

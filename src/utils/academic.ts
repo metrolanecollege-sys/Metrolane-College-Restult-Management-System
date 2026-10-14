@@ -31,6 +31,83 @@ export function computeAcademicStanding(gpa: number): 'Pass' | 'Probation' | 'Wi
   return 'Pass';
 }
 
+export interface CGPAProgressionBreakdown {
+  isYear2: boolean;
+  levelLabel: string;
+  previousUnits: number;
+  previousQualityPoints: number;
+  previousCgpa: number;
+  currentUnits: number;
+  currentQualityPoints: number;
+  currentGpa: number;
+  cumulativeUnits: number;
+  cumulativeQualityPoints: number;
+  cumulativeCgpa: number;
+}
+
+/**
+ * Computes CGPA continuing from Year 1 when student is in Year 2.
+ * Calculates Previous CGPA, Current GPA, and cumulative Current CGPA.
+ */
+export function computeProgressionCGPA(
+  student: { level?: string; year?: 1 | 2; previousCgpa?: number; previousCreditUnits?: number; previousQualityPoints?: number } | undefined,
+  currentUnits: number,
+  currentQualityPoints: number,
+  historicalResults: { creditUnit: number; qualityPoint: number; level?: string }[] = []
+): CGPAProgressionBreakdown {
+  const isYear2 = student?.level === 'ND2' || student?.level === 'HND2' || student?.year === 2;
+  const levelLabel = isYear2 
+    ? (student?.level === 'HND2' ? 'Year 2 (HND2)' : 'Year 2 (ND2)') 
+    : (student?.level === 'HND1' ? 'Year 1 (HND1)' : 'Year 1 (ND1)');
+
+  let previousUnits = 0;
+  let previousQualityPoints = 0;
+  let previousCgpa = 0;
+
+  if (isYear2) {
+    // 1. Calculate from historical prior-year results if available
+    const priorResults = historicalResults.filter(r => r.level === 'ND1' || r.level === 'HND1');
+    if (priorResults.length > 0) {
+      previousUnits = priorResults.reduce((acc, curr) => acc + (curr.creditUnit || 0), 0);
+      previousQualityPoints = priorResults.reduce((acc, curr) => acc + (curr.qualityPoint || 0), 0);
+      previousCgpa = previousUnits > 0 ? parseFloat((previousQualityPoints / previousUnits).toFixed(2)) : 0;
+    } 
+    
+    // 2. If student record has explicit previous CGPA (from profile / input), use that or override/combine
+    if (student?.previousCgpa && student.previousCgpa > 0) {
+      previousCgpa = student.previousCgpa;
+      previousUnits = student.previousCreditUnits && student.previousCreditUnits > 0 ? student.previousCreditUnits : (previousUnits > 0 ? previousUnits : 36);
+      previousQualityPoints = student.previousQualityPoints && student.previousQualityPoints > 0 
+        ? student.previousQualityPoints 
+        : parseFloat((previousCgpa * previousUnits).toFixed(2));
+    } else if (previousUnits === 0) {
+      // Default baseline for Year 2 student if not yet entered
+      previousCgpa = 3.40;
+      previousUnits = 36;
+      previousQualityPoints = parseFloat((3.40 * 36).toFixed(2)); // 122.40
+    }
+  }
+
+  const currentGpa = currentUnits > 0 ? parseFloat((currentQualityPoints / currentUnits).toFixed(2)) : 0.00;
+  const cumulativeUnits = previousUnits + currentUnits;
+  const cumulativeQualityPoints = parseFloat((previousQualityPoints + currentQualityPoints).toFixed(2));
+  const cumulativeCgpa = cumulativeUnits > 0 ? parseFloat((cumulativeQualityPoints / cumulativeUnits).toFixed(2)) : currentGpa;
+
+  return {
+    isYear2,
+    levelLabel,
+    previousUnits,
+    previousQualityPoints,
+    previousCgpa,
+    currentUnits,
+    currentQualityPoints,
+    currentGpa,
+    cumulativeUnits,
+    cumulativeQualityPoints,
+    cumulativeCgpa
+  };
+}
+
 export function generateMatricNumber(
   admissionYear: string,
   programmeCode: string,

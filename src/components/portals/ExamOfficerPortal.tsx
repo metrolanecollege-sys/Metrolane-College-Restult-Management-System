@@ -328,8 +328,9 @@ export const ExamOfficerPortal: React.FC<ExamOfficerPortalProps> = ({ activeTab,
                   <th className="py-3 px-3">Programme</th>
                   <th className="py-3 px-3 text-center">Registered CU</th>
                   <th className="py-3 px-3 text-center">Quality Points</th>
+                  <th className="py-3 px-3 text-center bg-amber-50 text-amber-900">Previous CGPA</th>
                   <th className="py-3 px-3 text-center">Semester GPA</th>
-                  <th className="py-3 px-3 text-center">Cumulative CGPA</th>
+                  <th className="py-3 px-3 text-center bg-purple-50 text-purple-900">Current CGPA</th>
                   <th className="py-3 px-3 text-center">Standing</th>
                   <th className="py-3 px-3 text-center">Classification</th>
                 </tr>
@@ -344,10 +345,13 @@ export const ExamOfficerPortal: React.FC<ExamOfficerPortalProps> = ({ activeTab,
                       <td className="py-2.5 px-3 text-gray-600">{std.programme}</td>
                       <td className="py-2.5 px-3 text-center font-bold text-gray-800">{summary.totalCreditUnits}</td>
                       <td className="py-2.5 px-3 text-center text-gray-700">{summary.totalQualityPoints.toFixed(2)}</td>
+                      <td className="py-2.5 px-3 text-center font-black text-amber-900 bg-amber-50/30">
+                        {summary.previousCgpa ? summary.previousCgpa.toFixed(2) : '-'}
+                      </td>
                       <td className="py-2.5 px-3 text-center font-black text-blue-600 text-sm">
                         {summary.gpa.toFixed(2)}
                       </td>
-                      <td className="py-2.5 px-3 text-center font-black text-[#5B4FC4] text-sm">
+                      <td className="py-2.5 px-3 text-center font-black text-[#5B4FC4] text-sm bg-purple-50/30">
                         {summary.cgpa.toFixed(2)}
                       </td>
                       <td className="py-2.5 px-3 text-center">

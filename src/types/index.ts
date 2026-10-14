@@ -42,6 +42,10 @@ export interface StudentRecord {
   programmeCode: 'CHT' | 'HLT' | 'PBH' | 'CHTHND';
   department: string;
   level: 'ND1' | 'ND2' | 'HND1' | 'HND2';
+  year?: 1 | 2; // Academic year (Year 1 or Year 2)
+  previousCgpa?: number; // Previous CGPA carried forward from Year 1
+  previousCreditUnits?: number; // Total credit units completed previously
+  previousQualityPoints?: number; // Total quality points earned previously
   admissionYear: string;
   currentSession: string; // e.g., "2025/2026"
   currentSemester: '1st Semester' | '2nd Semester';
@@ -157,6 +161,11 @@ export interface SemesterResultSummary {
   totalQualityPoints: number;
   gpa: number;
   cgpa: number;
+  previousCgpa?: number;
+  previousCreditUnits?: number;
+  previousQualityPoints?: number;
+  currentGpa?: number;
+  currentCgpa?: number;
   totalCreditUnitsCumulative: number;
   totalQualityPointsCumulative: number;
   remark: 'Pass' | 'Probation' | 'Withdraw';

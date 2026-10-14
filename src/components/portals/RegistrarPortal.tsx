@@ -68,6 +68,8 @@ export const RegistrarPortal: React.FC<RegistrarPortalProps> = ({ activeTab, onS
     programmeCode: 'CHT' as 'CHT' | 'HLT' | 'PBH' | 'CHTHND',
     department: 'Community Health Technology',
     level: 'ND1' as 'ND1' | 'ND2' | 'HND1' | 'HND2',
+    previousCgpa: '3.40',
+    previousCreditUnits: '36',
     admissionYear: '2026',
     currentSession: '2025/2026',
     currentSemester: '1st Semester' as '1st Semester' | '2nd Semester',
@@ -96,8 +98,15 @@ export const RegistrarPortal: React.FC<RegistrarPortalProps> = ({ activeTab, onS
 
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
+    const isYear2 = formData.level === 'ND2' || formData.level === 'HND2';
+    const parsedPrevCgpa = parseFloat(formData.previousCgpa) || undefined;
+    const parsedPrevUnits = parseInt(formData.previousCreditUnits, 10) || undefined;
     await addStudent({
       ...formData,
+      year: isYear2 ? 2 : 1,
+      previousCgpa: isYear2 ? parsedPrevCgpa : undefined,
+      previousCreditUnits: isYear2 ? parsedPrevUnits : undefined,
+      previousQualityPoints: (isYear2 && parsedPrevCgpa && parsedPrevUnits) ? parseFloat((parsedPrevCgpa * parsedPrevUnits).toFixed(2)) : undefined,
       status: 'active',
       clearanceStatus: { bursary: true, library: true, department: true }
     });
@@ -620,15 +629,48 @@ export const RegistrarPortal: React.FC<RegistrarPortalProps> = ({ activeTab, onS
                   <select
                     value={formData.level}
                     onChange={(e) => setFormData({ ...formData, level: e.target.value as any })}
-                    className="w-full p-2 border border-gray-300 rounded-lg outline-none bg-white"
+                    className="w-full p-2 border border-gray-300 rounded-lg outline-none bg-white font-bold"
                   >
-                    <option value="ND1">ND1</option>
-                    <option value="ND2">ND2</option>
-                    <option value="HND1">HND1</option>
-                    <option value="HND2">HND2</option>
+                    <option value="ND1">ND1 (Year 1)</option>
+                    <option value="ND2">ND2 (Year 2)</option>
+                    <option value="HND1">HND1 (Year 1)</option>
+                    <option value="HND2">HND2 (Year 2)</option>
                   </select>
                 </div>
               </div>
+
+              {(formData.level === 'ND2' || formData.level === 'HND2') && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+                  <span className="font-bold text-amber-900 block text-[11px] uppercase tracking-wider">
+                    Year 2 Student: Previous Year 1 Academic Record
+                  </span>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-gray-700 block mb-1">Previous CGPA (Year 1)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="4.00"
+                        value={formData.previousCgpa}
+                        onChange={(e) => setFormData({ ...formData, previousCgpa: e.target.value })}
+                        className="w-full p-2 border border-amber-300 rounded-lg outline-none bg-white font-mono font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-gray-700 block mb-1">Completed Year 1 Units</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="60"
+                        value={formData.previousCreditUnits}
+                        onChange={(e) => setFormData({ ...formData, previousCreditUnits: e.target.value })}
+                        className="w-full p-2 border border-amber-300 rounded-lg outline-none bg-white font-mono font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="mt-6 flex justify-end gap-2 pt-4 border-t border-gray-100">
                 <button

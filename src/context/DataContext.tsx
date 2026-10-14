@@ -224,6 +224,58 @@ const INITIAL_COURSES: Course[] = [
     lecturerId: 'lecturer_002',
     lecturerName: 'Mallam S. Usman',
     isActive: true
+  },
+  // Year 2 Courses (ND2)
+  {
+    id: 'course_cht201',
+    courseCode: 'CHT 201',
+    courseTitle: 'Community Health Management & Field Practicum',
+    creditUnit: 3,
+    courseType: 'Core',
+    programme: 'ND in Community Health Technology',
+    programmeCode: 'CHT',
+    level: 'ND2',
+    semester: '1st Semester',
+    caWeight: 30,
+    examWeight: 70,
+    prerequisite: 'CHT 101',
+    lecturerId: 'lecturer_001',
+    lecturerName: 'Dr. Amina Bello',
+    isActive: true
+  },
+  {
+    id: 'course_cht203',
+    courseCode: 'CHT 203',
+    courseTitle: 'Maternal, Child Health & Family Planning',
+    creditUnit: 3,
+    courseType: 'Core',
+    programme: 'ND in Community Health Technology',
+    programmeCode: 'CHT',
+    level: 'ND2',
+    semester: '1st Semester',
+    caWeight: 30,
+    examWeight: 70,
+    prerequisite: 'CHT 103',
+    lecturerId: 'lecturer_001',
+    lecturerName: 'Dr. Amina Bello',
+    isActive: true
+  },
+  {
+    id: 'course_hlt201',
+    courseCode: 'HLT 201',
+    courseTitle: 'Advanced Clinical Diagnostic Procedures',
+    creditUnit: 3,
+    courseType: 'Core',
+    programme: 'ND in Health Technician',
+    programmeCode: 'HLT',
+    level: 'ND2',
+    semester: '1st Semester',
+    caWeight: 30,
+    examWeight: 70,
+    prerequisite: 'HLT 101',
+    lecturerId: 'lecturer_002',
+    lecturerName: 'Mallam S. Usman',
+    isActive: true
   }
 ];
 
@@ -350,6 +402,39 @@ const INITIAL_STUDENTS: StudentRecord[] = [
       department: true
     },
     createdAt: '2026-01-12T11:00:00Z'
+  },
+  {
+    id: 'student_005',
+    uid: 'student_005',
+    matricNumber: '25/MET/CHT/008',
+    firstName: 'Musa',
+    middleName: 'Ibrahim',
+    lastName: 'Garba',
+    gender: 'Male',
+    dateOfBirth: '2003-04-12',
+    stateOfOrigin: 'Kano',
+    lga: 'Nasarawa',
+    address: '18 Campus View Road, Metrolane',
+    phone: '+234 802 333 7788',
+    email: 'musa.garba@student.metrolane.edu.ng',
+    programme: 'ND in Community Health Technology',
+    programmeCode: 'CHT',
+    department: 'Community Health Technology',
+    level: 'ND2',
+    year: 2,
+    previousCgpa: 3.42,
+    previousCreditUnits: 36,
+    previousQualityPoints: 123.12,
+    admissionYear: '2025',
+    currentSession: '2025/2026',
+    currentSemester: '1st Semester',
+    status: 'active',
+    clearanceStatus: {
+      bursary: true,
+      library: true,
+      department: true
+    },
+    createdAt: '2025-01-10T10:00:00Z'
   }
 ];
 
@@ -679,6 +764,20 @@ const INITIAL_REGISTRATIONS: CourseRegistration[] = [
     level: 'ND1',
     registeredAt: '2026-01-15T09:30:00Z',
     status: 'registered'
+  },
+  {
+    id: 'reg_006',
+    studentId: 'student_005',
+    matricNumber: '25/MET/CHT/008',
+    courseId: 'course_cht201',
+    courseCode: 'CHT 201',
+    courseTitle: 'Community Health Management & Field Practicum',
+    creditUnit: 3,
+    session: '2025/2026',
+    semester: '1st Semester',
+    level: 'ND2',
+    registeredAt: '2026-01-15T10:00:00Z',
+    status: 'registered'
   }
 ];
 
@@ -737,7 +836,8 @@ interface DataContextType {
   courseRegistrations: CourseRegistration[];
 
   // CRUD & Operations
-  addStudent: (student: Omit<StudentRecord, 'id' | 'matricNumber' | 'createdAt'>) => Promise<StudentRecord>;
+  addStudent: (student: Omit<StudentRecord, 'id' | 'createdAt' | 'matricNumber'> & { matricNumber?: string }) => Promise<StudentRecord>;
+  enrollStudentInCourse: (studentId: string, matricNumber: string, courseId: string, session?: string, semester?: '1st Semester' | '2nd Semester', level?: string) => Promise<CourseRegistration>;
   updateStudent: (id: string, data: Partial<StudentRecord>) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
 
@@ -1004,20 +1104,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const addStudent = async (data: Omit<StudentRecord, 'id' | 'matricNumber' | 'createdAt'>): Promise<StudentRecord> => {
+  const addStudent = async (data: Omit<StudentRecord, 'id' | 'createdAt' | 'matricNumber'> & { matricNumber?: string }): Promise<StudentRecord> => {
     const admissionYear = data.admissionYear || '2026';
-    const programmeCode = data.programmeCode || 'CHT';
+    const programmeCode = (data.programmeCode as any) || 'CHT';
     const sameProgCount = students.filter(s => s.programmeCode === programmeCode).length;
-    const matricNumber = generateMatricNumber(admissionYear, programmeCode, sameProgCount);
+    const matricNumber = (data.matricNumber && data.matricNumber.trim().length > 0)
+      ? data.matricNumber.trim()
+      : generateMatricNumber(admissionYear, programmeCode, sameProgCount);
     
     const newStudent: StudentRecord = {
-      ...data,
       id: `std_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       matricNumber,
+      firstName: data.firstName || 'Student',
+      lastName: data.lastName || 'Learner',
+      middleName: data.middleName || '',
+      gender: data.gender || 'Female',
+      email: data.email || `${matricNumber.toLowerCase().replace(/[^a-z0-9]/g, '.')}@student.metrolane.edu.ng`,
+      phone: data.phone || '+234 800 000 0000',
+      stateOfOrigin: data.stateOfOrigin || 'Kano',
+      lga: data.lga || 'Nasarawa',
+      programme: data.programme || 'ND in Community Health Technology',
+      programmeCode: programmeCode as any,
+      department: data.department || 'Community Health Technology',
+      level: data.level || 'ND1',
+      year: data.year || (data.level === 'ND2' || data.level === 'HND2' ? 2 : 1),
+      previousCgpa: data.previousCgpa,
+      previousCreditUnits: data.previousCreditUnits,
+      previousQualityPoints: data.previousQualityPoints,
+      admissionYear,
+      currentSession: data.currentSession || settings.currentSession,
+      currentSemester: data.currentSemester || settings.currentSemester,
+      status: data.status || 'active',
+      clearanceStatus: data.clearanceStatus || { bursary: true, library: true, department: true },
       createdAt: new Date().toISOString()
     };
 
-    setStudents(prev => [newStudent, ...prev]);
+    setStudents(prev => [newStudent, ...prev.filter(s => s.matricNumber.toLowerCase() !== matricNumber.toLowerCase())]);
 
     try {
       await setDoc(doc(db, 'students', newStudent.id), newStudent);
@@ -1027,10 +1149,56 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     await logAudit(
       'STUDENT_REGISTERED',
-      `Registered student ${newStudent.firstName} ${newStudent.lastName} with Matric No: ${matricNumber}`
+      `Registered student ${newStudent.firstName} ${newStudent.lastName} with Matric No: ${matricNumber} (Level: ${newStudent.level}${newStudent.previousCgpa ? `, Prev CGPA: ${newStudent.previousCgpa}` : ''})`
     );
 
     return newStudent;
+  };
+
+  const enrollStudentInCourse = async (
+    studentId: string, 
+    matricNumber: string, 
+    courseId: string, 
+    session = settings.currentSession, 
+    semester: '1st Semester' | '2nd Semester' = settings.currentSemester, 
+    level = 'ND1'
+  ): Promise<CourseRegistration> => {
+    const crs = courses.find(c => c.id === courseId);
+    const existing = courseRegistrations.find(
+      r => (r.studentId === studentId || r.matricNumber.toLowerCase() === matricNumber.toLowerCase()) && 
+           r.courseId === courseId && 
+           r.session === session && 
+           r.semester === semester
+    );
+
+    if (existing) {
+      return existing;
+    }
+
+    const newReg: CourseRegistration = {
+      id: `reg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      studentId,
+      matricNumber,
+      courseId,
+      courseCode: crs?.courseCode || 'CHT 101',
+      courseTitle: crs?.courseTitle || 'Course Title',
+      creditUnit: crs?.creditUnit || 3,
+      session,
+      semester,
+      level: crs?.level || level,
+      registeredAt: new Date().toISOString(),
+      status: 'registered'
+    };
+
+    setCourseRegistrations(prev => [newReg, ...prev]);
+    try {
+      await setDoc(doc(db, 'courseRegistrations', newReg.id), newReg);
+    } catch {
+      // local sync
+    }
+
+    await logAudit('COURSE_ENROLLED', `Enrolled ${matricNumber} in ${crs?.courseCode || courseId}`);
+    return newReg;
   };
 
   const updateStudent = async (id: string, data: Partial<StudentRecord>) => {
@@ -1592,10 +1760,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const totalQP = semesterScores.reduce((acc, curr) => acc + (curr.qualityPoint || 0), 0);
     const gpa = totalCU > 0 ? parseFloat((totalQP / totalCU).toFixed(2)) : 0.00;
 
-    // Cumulative (all completed results for this student up to this date)
-    const allStudentScores = results.filter(r => r.studentId === studentId);
-    const cumCU = allStudentScores.reduce((acc, curr) => acc + (curr.creditUnit || 0), 0);
-    const cumQP = allStudentScores.reduce((acc, curr) => acc + (curr.qualityPoint || 0), 0);
+    // Check if student is Year 2 (ND2, HND2, year: 2) or has previous records
+    const isYear2 = student?.level === 'ND2' || student?.level === 'HND2' || student?.year === 2;
+    let prevCU = 0;
+    let prevQP = 0;
+    let prevCgpa = 0;
+
+    if (isYear2) {
+      // Prior-year completed results from ND1 / HND1 or previous session
+      const priorScores = results.filter(
+        r => r.studentId === studentId && (r.level === 'ND1' || r.level === 'HND1' || r.session !== session)
+      );
+      if (priorScores.length > 0) {
+        prevCU = priorScores.reduce((acc, curr) => acc + (curr.creditUnit || 0), 0);
+        prevQP = priorScores.reduce((acc, curr) => acc + (curr.qualityPoint || 0), 0);
+        prevCgpa = prevCU > 0 ? parseFloat((prevQP / prevCU).toFixed(2)) : 0;
+      }
+
+      // If student has explicit previous CGPA from student information, use that baseline
+      if (student?.previousCgpa && student.previousCgpa > 0) {
+        prevCgpa = student.previousCgpa;
+        prevCU = student.previousCreditUnits && student.previousCreditUnits > 0 ? student.previousCreditUnits : (prevCU > 0 ? prevCU : 36);
+        prevQP = student.previousQualityPoints && student.previousQualityPoints > 0 
+          ? student.previousQualityPoints 
+          : parseFloat((prevCgpa * prevCU).toFixed(2));
+      } else if (prevCU === 0) {
+        // Default baseline for Year 2 if not yet set
+        prevCgpa = 3.40;
+        prevCU = 36;
+        prevQP = parseFloat((3.40 * 36).toFixed(2));
+      }
+    }
+
+    const cumCU = prevCU + totalCU;
+    const cumQP = parseFloat((prevQP + totalQP).toFixed(2));
     const cgpa = cumCU > 0 ? parseFloat((cumQP / cumCU).toFixed(2)) : gpa;
 
     const classification = computeClassification(cgpa);
@@ -1614,6 +1812,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       totalQualityPoints: totalQP,
       gpa,
       cgpa,
+      previousCgpa: isYear2 ? prevCgpa : undefined,
+      previousCreditUnits: isYear2 ? prevCU : undefined,
+      previousQualityPoints: isYear2 ? prevQP : undefined,
+      currentGpa: gpa,
+      currentCgpa: cgpa,
       totalCreditUnitsCumulative: cumCU,
       totalQualityPointsCumulative: cumQP,
       remark,
@@ -1641,6 +1844,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deleteUser,
 
         addStudent,
+        enrollStudentInCourse,
         updateStudent,
         deleteStudent,
 
