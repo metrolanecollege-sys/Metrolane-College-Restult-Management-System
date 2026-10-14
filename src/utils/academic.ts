@@ -1,20 +1,45 @@
-/**
- * Academic grading, calculation and Nigerian administrative data helpers
- */
+import { GradeType, GradeScaleBand, ResultScore, StudentRecord, AcademicProgressionItem } from '../types';
 
 export interface GradeResult {
-  grade: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+  grade: GradeType;
   gradePoint: number;
   remark: 'Pass' | 'Fail';
 }
 
-export function computeGrade(totalScore: number): GradeResult {
-  const score = Math.round(totalScore);
-  if (score >= 70) return { grade: 'A', gradePoint: 4.00, remark: 'Pass' };
-  if (score >= 60) return { grade: 'B', gradePoint: 3.50, remark: 'Pass' };
-  if (score >= 55) return { grade: 'C', gradePoint: 3.00, remark: 'Pass' };
-  if (score >= 50) return { grade: 'D', gradePoint: 2.50, remark: 'Pass' };
-  if (score >= 45) return { grade: 'E', gradePoint: 2.00, remark: 'Pass' };
+/**
+ * Standard NBTE Grading Scale (9-Point Scale)
+ * Configurable by institution administrators
+ */
+export const DEFAULT_GRADING_SCALE: GradeScaleBand[] = [
+  { min: 75, max: 100, grade: 'A', gradePoint: 4.00, remark: 'Pass' },
+  { min: 70, max: 74, grade: 'AB', gradePoint: 3.50, remark: 'Pass' },
+  { min: 65, max: 69, grade: 'B', gradePoint: 3.25, remark: 'Pass' },
+  { min: 60, max: 64, grade: 'BC', gradePoint: 3.00, remark: 'Pass' },
+  { min: 55, max: 59, grade: 'C', gradePoint: 2.75, remark: 'Pass' },
+  { min: 50, max: 54, grade: 'CD', gradePoint: 2.50, remark: 'Pass' },
+  { min: 45, max: 49, grade: 'D', gradePoint: 2.25, remark: 'Pass' },
+  { min: 40, max: 44, grade: 'E', gradePoint: 2.00, remark: 'Pass' },
+  { min: 0, max: 39, grade: 'F', gradePoint: 0.00, remark: 'Fail' },
+];
+
+export function computeGrade(
+  totalScore: number, 
+  customScale?: GradeScaleBand[]
+): GradeResult {
+  const score = Math.round(Number(totalScore) || 0);
+  const scale = customScale && customScale.length > 0 ? customScale : DEFAULT_GRADING_SCALE;
+
+  for (const band of scale) {
+    if (score >= band.min && score <= band.max) {
+      return {
+        grade: band.grade,
+        gradePoint: band.gradePoint,
+        remark: band.remark
+      };
+    }
+  }
+
+  if (score >= 75) return { grade: 'A', gradePoint: 4.00, remark: 'Pass' };
   return { grade: 'F', gradePoint: 0.00, remark: 'Fail' };
 }
 
@@ -29,6 +54,236 @@ export function computeClassification(cgpa: number): 'Distinction' | 'Upper Cred
 export function computeAcademicStanding(gpa: number): 'Pass' | 'Probation' | 'Withdraw' {
   if (gpa < 1.50) return 'Probation';
   return 'Pass';
+}
+
+export interface SemesterDefinition {
+  programmeType: 'ND' | 'HND';
+  order: number; // 1 to 4
+  level: 'ND1' | 'ND2' | 'HND1' | 'HND2';
+  levelDisplay: 'ND 1' | 'ND 2' | 'HND 1' | 'HND 2';
+  semester: '1st Semester' | '2nd Semester';
+  semesterDisplay: 'First Semester' | 'Second Semester';
+  displayName: string;
+}
+
+export const ACADEMIC_SEMESTER_STRUCTURE: Record<'ND' | 'HND', SemesterDefinition[]> = {
+  ND: [
+    { programmeType: 'ND', order: 1, level: 'ND1', levelDisplay: 'ND 1', semester: '1st Semester', semesterDisplay: 'First Semester', displayName: 'ND 1 – First Semester' },
+    { programmeType: 'ND', order: 2, level: 'ND1', levelDisplay: 'ND 1', semester: '2nd Semester', semesterDisplay: 'Second Semester', displayName: 'ND 1 – Second Semester' },
+    { programmeType: 'ND', order: 3, level: 'ND2', levelDisplay: 'ND 2', semester: '1st Semester', semesterDisplay: 'First Semester', displayName: 'ND 2 – First Semester' },
+    { programmeType: 'ND', order: 4, level: 'ND2', levelDisplay: 'ND 2', semester: '2nd Semester', semesterDisplay: 'Second Semester', displayName: 'ND 2 – Second Semester' }
+  ],
+  HND: [
+    { programmeType: 'HND', order: 1, level: 'HND1', levelDisplay: 'HND 1', semester: '1st Semester', semesterDisplay: 'First Semester', displayName: 'HND 1 – First Semester' },
+    { programmeType: 'HND', order: 2, level: 'HND1', levelDisplay: 'HND 1', semester: '2nd Semester', semesterDisplay: 'Second Semester', displayName: 'HND 1 – Second Semester' },
+    { programmeType: 'HND', order: 3, level: 'HND2', levelDisplay: 'HND 2', semester: '1st Semester', semesterDisplay: 'First Semester', displayName: 'HND 2 – First Semester' },
+    { programmeType: 'HND', order: 4, level: 'HND2', levelDisplay: 'HND 2', semester: '2nd Semester', semesterDisplay: 'Second Semester', displayName: 'HND 2 – Second Semester' }
+  ]
+};
+
+export interface AcademicProgressionResult {
+  programmeType: 'ND' | 'HND';
+  currentOrder: number;
+  currentLevelDisplay: string;
+  currentSemesterDisplay: string;
+  
+  // Three Key Academic Values required by specification:
+  previousCgpa: number | undefined;
+  previousCgpaText: string; // e.g. "N/A" or "3.20"
+  currentGpa: number;
+  cumulativeCgpa: number;
+
+  // Breakdown details
+  previousCreditUnits: number;
+  previousQualityPoints: number;
+  currentCreditUnits: number;
+  currentQualityPoints: number;
+  cumulativeCreditUnits: number;
+  cumulativeQualityPoints: number;
+
+  classification: 'Distinction' | 'Upper Credit' | 'Lower Credit' | 'Pass' | 'Fail';
+  standing: 'Pass' | 'Probation' | 'Withdraw';
+
+  // Academic Performance History Table (all completed/current semesters)
+  history: AcademicProgressionItem[];
+}
+
+/**
+ * Complete, accurate, automated progressive CGPA calculation engine for ND and HND.
+ * Adheres strictly to institutional rules:
+ * 1. Independent ND and HND calculations (ND never carries into HND).
+ * 2. Cumulative CGPA calculated as total quality points divided by total credit units.
+ * 3. Never simple addition of GPAs; strictly weighted cumulative.
+ * 4. Displays Previous CGPA as "N/A" for first semester, and exact previous cumulative CGPA otherwise.
+ * 5. Handles Year 2 baseline carries and dynamic result corrections.
+ */
+export function calculateAcademicProgression(params: {
+  student?: Partial<StudentRecord> | null;
+  targetLevel?: string;
+  targetSemester?: '1st Semester' | '2nd Semester';
+  targetSession?: string;
+  allResults?: ResultScore[];
+  customGradingScale?: GradeScaleBand[];
+}): AcademicProgressionResult {
+  const {
+    student,
+    targetLevel,
+    targetSemester = '1st Semester',
+    targetSession,
+    allResults = [],
+    customGradingScale
+  } = params;
+
+  // Determine programme type: ND or HND
+  const progStr = (student?.programme || '').toUpperCase();
+  const levelStr = (targetLevel || student?.level || 'ND1').toUpperCase();
+  const progType: 'ND' | 'HND' = (progStr.includes('HND') || levelStr.startsWith('HND')) ? 'HND' : 'ND';
+
+  const semStructure = ACADEMIC_SEMESTER_STRUCTURE[progType];
+
+  // Match target semester in the sequence
+  const currentLevelCode = (targetLevel || student?.level || (progType === 'HND' ? 'HND1' : 'ND1')).toUpperCase();
+  let currentStageIndex = semStructure.findIndex(
+    s => s.level.toUpperCase() === currentLevelCode && s.semester === targetSemester
+  );
+  if (currentStageIndex === -1) {
+    // Default to level matching or first semester
+    currentStageIndex = semStructure.findIndex(s => s.level.toUpperCase() === currentLevelCode);
+    if (currentStageIndex === -1) currentStageIndex = 0;
+  }
+
+  const currentStage = semStructure[currentStageIndex];
+
+  // Filter student's results: only for this student and this programme (ND or HND)
+  const studentResults = allResults.filter(r => {
+    const isThisStudent = (student?.id && r.studentId === student.id) ||
+      (student?.matricNumber && r.matricNumber.trim().toLowerCase() === student.matricNumber.trim().toLowerCase());
+    if (!isThisStudent) return false;
+
+    // Filter by programme separation
+    const isHndResult = r.level.startsWith('HND') || (r.programme && r.programme.toUpperCase().includes('HND'));
+    if (progType === 'HND') return isHndResult;
+    return !isHndResult;
+  });
+
+  // Calculate stats for each semester stage up to currentStageIndex
+  let cumulativeCU = 0;
+  let cumulativeQP = 0;
+  const history: AcademicProgressionItem[] = [];
+
+  let previousCU = 0;
+  let previousQP = 0;
+
+  for (let i = 0; i <= currentStageIndex; i++) {
+    const stage = semStructure[i];
+    const isTargetStage = i === currentStageIndex;
+
+    // Results in this specific semester
+    const stageResults = studentResults.filter(r => {
+      const matchLevel = r.level.toUpperCase() === stage.level.toUpperCase();
+      const matchSem = r.semester === stage.semester;
+      // If targetSession is provided for current stage, match session if possible
+      if (isTargetStage && targetSession && r.session) {
+        return matchLevel && matchSem && r.session === targetSession;
+      }
+      return matchLevel && matchSem;
+    });
+
+    let stageCU = 0;
+    let stageQP = 0;
+
+    if (stageResults.length > 0) {
+      stageCU = stageResults.reduce((acc, curr) => acc + (curr.creditUnit || 0), 0);
+      stageQP = stageResults.reduce((acc, curr) => {
+        // Calculate quality point with precision
+        const total = Number(curr.caScore || 0) + Number(curr.examScore || 0);
+        const { gradePoint } = computeGrade(total, customGradingScale);
+        const qp = parseFloat(((curr.creditUnit || 3) * gradePoint).toFixed(2));
+        return acc + qp;
+      }, 0);
+    } else if (i < currentStageIndex) {
+      // Prior semester with no individual course items entered yet:
+      // If student has explicit previous baseline from profile, distribute or use baseline
+      if (i === 0 && student?.previousCgpa && student.previousCgpa > 0) {
+        const baselineUnits = student.previousCreditUnits && student.previousCreditUnits > 0 
+          ? (student.previousCreditUnits / (currentStageIndex > 1 ? 2 : 1))
+          : 18;
+        stageCU = baselineUnits;
+        stageQP = parseFloat((student.previousCgpa * baselineUnits).toFixed(2));
+      } else if (i === 1 && student?.previousCgpa && student.previousCgpa > 0 && currentStageIndex >= 2) {
+        const baselineUnits = student.previousCreditUnits && student.previousCreditUnits > 0 
+          ? (student.previousCreditUnits / 2)
+          : 18;
+        stageCU = baselineUnits;
+        stageQP = parseFloat((student.previousCgpa * baselineUnits).toFixed(2));
+      } else if (student?.year === 2 || currentLevelCode === 'ND2' || currentLevelCode === 'HND2') {
+        // Baseline default for Year 2 prior semesters (18 CU per semester @ 3.40 CGPA)
+        stageCU = 18;
+        stageQP = parseFloat((3.40 * 18).toFixed(2)); // 61.20
+      }
+    }
+
+    const stageGpa = stageCU > 0 ? parseFloat((stageQP / stageCU).toFixed(2)) : 0.00;
+
+    if (i < currentStageIndex) {
+      previousCU += stageCU;
+      previousQP += stageQP;
+    }
+
+    cumulativeCU += stageCU;
+    cumulativeQP += stageQP;
+    const stageCgpa = cumulativeCU > 0 ? parseFloat((cumulativeQP / cumulativeCU).toFixed(2)) : stageGpa;
+
+    history.push({
+      level: stage.levelDisplay,
+      semester: stage.semester,
+      semesterLabel: stage.semesterDisplay,
+      session: targetSession || student?.currentSession || '2025/2026',
+      creditUnits: stageCU,
+      qualityPoints: parseFloat(stageQP.toFixed(2)),
+      gpa: stageGpa,
+      cgpa: stageCgpa,
+      isCurrent: isTargetStage
+    });
+  }
+
+  // Current stage stats
+  const currentStageHistory = history[history.length - 1];
+  const currentCU = currentStageHistory ? currentStageHistory.creditUnits : 0;
+  const currentQP = currentStageHistory ? currentStageHistory.qualityPoints : 0;
+  const currentGpa = currentStageHistory ? currentStageHistory.gpa : 0.00;
+
+  // Previous CGPA:
+  // For the very first semester (order 1), Previous CGPA is N/A!
+  const isFirstSemester = currentStage.order === 1;
+  const previousCgpa = (!isFirstSemester && previousCU > 0)
+    ? parseFloat((previousQP / previousCU).toFixed(2))
+    : undefined;
+  const previousCgpaText = isFirstSemester ? 'N/A' : (previousCgpa !== undefined ? previousCgpa.toFixed(2) : 'N/A');
+
+  const finalCumulativeCgpa = cumulativeCU > 0 
+    ? parseFloat((cumulativeQP / cumulativeCU).toFixed(2))
+    : currentGpa;
+
+  return {
+    programmeType: progType,
+    currentOrder: currentStage.order,
+    currentLevelDisplay: currentStage.levelDisplay,
+    currentSemesterDisplay: currentStage.semesterDisplay,
+    previousCgpa,
+    previousCgpaText,
+    currentGpa,
+    cumulativeCgpa: finalCumulativeCgpa,
+    previousCreditUnits: previousCU,
+    previousQualityPoints: parseFloat(previousQP.toFixed(2)),
+    currentCreditUnits: currentCU,
+    currentQualityPoints: parseFloat(currentQP.toFixed(2)),
+    cumulativeCreditUnits: cumulativeCU,
+    cumulativeQualityPoints: parseFloat(cumulativeQP.toFixed(2)),
+    classification: computeClassification(finalCumulativeCgpa),
+    standing: computeAcademicStanding(currentGpa),
+    history
+  };
 }
 
 export interface CGPAProgressionBreakdown {
@@ -46,11 +301,11 @@ export interface CGPAProgressionBreakdown {
 }
 
 /**
- * Computes CGPA continuing from Year 1 when student is in Year 2.
- * Calculates Previous CGPA, Current GPA, and cumulative Current CGPA.
+ * Legacy-compatible progression helper for score entry sheets and real-time inputs.
+ * Directly wraps calculateAcademicProgression for single-course draft calculations.
  */
 export function computeProgressionCGPA(
-  student: { level?: string; year?: 1 | 2; previousCgpa?: number; previousCreditUnits?: number; previousQualityPoints?: number } | undefined,
+  student: { level?: string; year?: 1 | 2; previousCgpa?: number; previousCreditUnits?: number; previousQualityPoints?: number; programme?: string; matricNumber?: string } | undefined,
   currentUnits: number,
   currentQualityPoints: number,
   historicalResults: { creditUnit: number; qualityPoint: number; level?: string }[] = []
@@ -65,15 +320,13 @@ export function computeProgressionCGPA(
   let previousCgpa = 0;
 
   if (isYear2) {
-    // 1. Calculate from historical prior-year results if available
     const priorResults = historicalResults.filter(r => r.level === 'ND1' || r.level === 'HND1');
     if (priorResults.length > 0) {
       previousUnits = priorResults.reduce((acc, curr) => acc + (curr.creditUnit || 0), 0);
       previousQualityPoints = priorResults.reduce((acc, curr) => acc + (curr.qualityPoint || 0), 0);
       previousCgpa = previousUnits > 0 ? parseFloat((previousQualityPoints / previousUnits).toFixed(2)) : 0;
     } 
-    
-    // 2. If student record has explicit previous CGPA (from profile / input), use that or override/combine
+
     if (student?.previousCgpa && student.previousCgpa > 0) {
       previousCgpa = student.previousCgpa;
       previousUnits = student.previousCreditUnits && student.previousCreditUnits > 0 ? student.previousCreditUnits : (previousUnits > 0 ? previousUnits : 36);
@@ -81,7 +334,6 @@ export function computeProgressionCGPA(
         ? student.previousQualityPoints 
         : parseFloat((previousCgpa * previousUnits).toFixed(2));
     } else if (previousUnits === 0) {
-      // Default baseline for Year 2 student if not yet entered
       previousCgpa = 3.40;
       previousUnits = 36;
       previousQualityPoints = parseFloat((3.40 * 36).toFixed(2)); // 122.40

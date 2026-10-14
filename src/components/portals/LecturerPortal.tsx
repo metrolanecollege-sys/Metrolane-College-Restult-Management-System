@@ -508,14 +508,15 @@ export const LecturerPortal: React.FC<LecturerPortalProps> = ({ activeTab, onSel
                     courseStudents.map((std, index) => {
                       const current = draftScores[std.id] || { ca: 0, exam: 0 };
                       const total = Number(current.ca) + Number(current.exam);
-                      const { grade, gradePoint, remark } = computeGrade(total);
+                      const { grade, gradePoint, remark } = computeGrade(total, settings.gradingScale);
                       const currentQP = parseFloat((gradePoint * (selectedCourse?.creditUnit || 3)).toFixed(2));
 
                       // Calculate Progression and continuous CGPA
                       const prog = computeProgressionCGPA(
                         std,
                         selectedCourse?.creditUnit || 3,
-                        currentQP
+                        currentQP,
+                        results.filter(r => r.studentId === std.id)
                       );
 
                       const isStdYear2 = prog.isYear2;
@@ -583,8 +584,9 @@ export const LecturerPortal: React.FC<LecturerPortalProps> = ({ activeTab, onSel
                           <td className="py-2.5 px-2 text-center">
                             <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-black ${
                               grade === 'F' ? 'bg-red-100 text-red-700' :
-                              grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
-                              'bg-blue-100 text-blue-800'
+                              grade === 'A' || grade === 'AB' ? 'bg-emerald-100 text-emerald-800' :
+                              grade === 'B' || grade === 'BC' ? 'bg-blue-100 text-blue-800' :
+                              'bg-amber-100 text-amber-800'
                             }`}>
                               {grade}
                             </span>
@@ -592,7 +594,7 @@ export const LecturerPortal: React.FC<LecturerPortalProps> = ({ activeTab, onSel
 
                           {/* Grade Point */}
                           <td className="py-2.5 px-2 text-center text-gray-700 font-mono text-[11px]">
-                            {gradePoint.toFixed(1)}
+                            {gradePoint.toFixed(2)}
                           </td>
 
                           {/* Current CGPA (Continuous Calculation) */}

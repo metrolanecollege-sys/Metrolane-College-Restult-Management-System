@@ -346,7 +346,7 @@ export const ExamOfficerPortal: React.FC<ExamOfficerPortalProps> = ({ activeTab,
                       <td className="py-2.5 px-3 text-center font-bold text-gray-800">{summary.totalCreditUnits}</td>
                       <td className="py-2.5 px-3 text-center text-gray-700">{summary.totalQualityPoints.toFixed(2)}</td>
                       <td className="py-2.5 px-3 text-center font-black text-amber-900 bg-amber-50/30">
-                        {summary.previousCgpa ? summary.previousCgpa.toFixed(2) : '-'}
+                        {summary.previousCgpaText || (summary.previousCgpa ? summary.previousCgpa.toFixed(2) : 'N/A')}
                       </td>
                       <td className="py-2.5 px-3 text-center font-black text-blue-600 text-sm">
                         {summary.gpa.toFixed(2)}

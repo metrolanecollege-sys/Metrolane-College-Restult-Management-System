@@ -15,7 +15,16 @@ import {
   UserRole,
   UserProfile 
 } from '../types';
-import { computeGrade, computeClassification, computeAcademicStanding, generatePinCode, generatePinSerial, generateMatricNumber } from '../utils/academic';
+import { 
+  computeGrade, 
+  computeClassification, 
+  computeAcademicStanding, 
+  generatePinCode, 
+  generatePinSerial, 
+  generateMatricNumber,
+  DEFAULT_GRADING_SCALE,
+  calculateAcademicProgression
+} from '../utils/academic';
 import { db } from '../firebase/config';
 import { handleFirestoreError, OperationType } from '../firebase/errors';
 import { 
@@ -690,6 +699,158 @@ const INITIAL_RESULTS: ResultScore[] = [
     status: 'submitted', // Ready for HOD review!
     approvals: {},
     createdAt: '2026-02-06T10:00:00Z'
+  },
+  // Year 1 Semester 1 Results for Musa Ibrahim Garba (ND2 Student)
+  {
+    id: 'res_006',
+    studentId: 'student_005',
+    matricNumber: '25/MET/CHT/008',
+    studentName: 'Musa Ibrahim Garba',
+    courseId: 'course_cht101',
+    courseCode: 'CHT 101',
+    courseTitle: 'Introduction to Community Health',
+    creditUnit: 3,
+    session: '2024/2025',
+    semester: '1st Semester',
+    level: 'ND1',
+    programme: 'ND in Community Health Technology',
+    caScore: 25,
+    examScore: 55,
+    totalScore: 80,
+    grade: 'A',
+    gradePoint: 4.00,
+    qualityPoint: 12.00,
+    remark: 'Pass',
+    isCarryover: false,
+    enteredBy: 'lecturer_001',
+    status: 'published',
+    approvals: {
+      hod: { approved: true, by: 'Dr. Ibrahim Al-Hassan', date: '2025-02-10T11:00:00Z' },
+      examOfficer: { approved: true, by: 'Dr. (Mrs) Folashade Adeyemi', date: '2025-02-12T14:00:00Z' },
+      registrar: { approved: true, by: 'Barr. M. O. Danladi', date: '2025-02-14T09:00:00Z' }
+    },
+    createdAt: '2025-02-05T10:00:00Z'
+  },
+  {
+    id: 'res_007',
+    studentId: 'student_005',
+    matricNumber: '25/MET/CHT/008',
+    studentName: 'Musa Ibrahim Garba',
+    courseId: 'course_cht103',
+    courseCode: 'CHT 103',
+    courseTitle: 'Primary Health Care & Practice',
+    creditUnit: 2,
+    session: '2024/2025',
+    semester: '1st Semester',
+    level: 'ND1',
+    programme: 'ND in Community Health Technology',
+    caScore: 22,
+    examScore: 48,
+    totalScore: 70,
+    grade: 'AB',
+    gradePoint: 3.50,
+    qualityPoint: 7.00,
+    remark: 'Pass',
+    isCarryover: false,
+    enteredBy: 'lecturer_001',
+    status: 'published',
+    approvals: {
+      hod: { approved: true, by: 'Dr. Ibrahim Al-Hassan', date: '2025-02-10T11:00:00Z' },
+      examOfficer: { approved: true, by: 'Dr. (Mrs) Folashade Adeyemi', date: '2025-02-12T14:00:00Z' },
+      registrar: { approved: true, by: 'Barr. M. O. Danladi', date: '2025-02-14T09:00:00Z' }
+    },
+    createdAt: '2025-02-05T10:15:00Z'
+  },
+  {
+    id: 'res_008',
+    studentId: 'student_005',
+    matricNumber: '25/MET/CHT/008',
+    studentName: 'Musa Ibrahim Garba',
+    courseId: 'course_cht105',
+    courseCode: 'CHT 105',
+    courseTitle: 'Anatomy & Physiology I',
+    creditUnit: 3,
+    session: '2024/2025',
+    semester: '1st Semester',
+    level: 'ND1',
+    programme: 'ND in Community Health Technology',
+    caScore: 21,
+    examScore: 45,
+    totalScore: 66,
+    grade: 'B',
+    gradePoint: 3.25,
+    qualityPoint: 9.75,
+    remark: 'Pass',
+    isCarryover: false,
+    enteredBy: 'lecturer_001',
+    status: 'published',
+    approvals: {
+      hod: { approved: true, by: 'Dr. Ibrahim Al-Hassan', date: '2025-02-10T11:00:00Z' },
+      examOfficer: { approved: true, by: 'Dr. (Mrs) Folashade Adeyemi', date: '2025-02-12T14:00:00Z' },
+      registrar: { approved: true, by: 'Barr. M. O. Danladi', date: '2025-02-14T09:00:00Z' }
+    },
+    createdAt: '2025-02-05T10:30:00Z'
+  },
+  // Year 1 Semester 2 Results for Musa Ibrahim Garba
+  {
+    id: 'res_009',
+    studentId: 'student_005',
+    matricNumber: '25/MET/CHT/008',
+    studentName: 'Musa Ibrahim Garba',
+    courseId: 'course_cht107',
+    courseCode: 'CHT 107',
+    courseTitle: 'Health Education & Promotion',
+    creditUnit: 2,
+    session: '2024/2025',
+    semester: '2nd Semester',
+    level: 'ND1',
+    programme: 'ND in Community Health Technology',
+    caScore: 24,
+    examScore: 48,
+    totalScore: 72,
+    grade: 'AB',
+    gradePoint: 3.50,
+    qualityPoint: 7.00,
+    remark: 'Pass',
+    isCarryover: false,
+    enteredBy: 'lecturer_002',
+    status: 'published',
+    approvals: {
+      hod: { approved: true, by: 'Dr. Ibrahim Al-Hassan', date: '2025-07-10T11:00:00Z' },
+      examOfficer: { approved: true, by: 'Dr. (Mrs) Folashade Adeyemi', date: '2025-07-12T14:00:00Z' },
+      registrar: { approved: true, by: 'Barr. M. O. Danladi', date: '2025-07-14T09:00:00Z' }
+    },
+    createdAt: '2025-07-05T10:00:00Z'
+  },
+  {
+    id: 'res_010',
+    studentId: 'student_005',
+    matricNumber: '25/MET/CHT/008',
+    studentName: 'Musa Ibrahim Garba',
+    courseId: 'course_gns105',
+    courseCode: 'GNS 105',
+    courseTitle: 'Introduction to Computer Science',
+    creditUnit: 2,
+    session: '2024/2025',
+    semester: '2nd Semester',
+    level: 'ND1',
+    programme: 'ND in Community Health Technology',
+    caScore: 26,
+    examScore: 50,
+    totalScore: 76,
+    grade: 'A',
+    gradePoint: 4.00,
+    qualityPoint: 8.00,
+    remark: 'Pass',
+    isCarryover: false,
+    enteredBy: 'lecturer_004',
+    status: 'published',
+    approvals: {
+      hod: { approved: true, by: 'Dr. Ibrahim Al-Hassan', date: '2025-07-10T11:00:00Z' },
+      examOfficer: { approved: true, by: 'Dr. (Mrs) Folashade Adeyemi', date: '2025-07-12T14:00:00Z' },
+      registrar: { approved: true, by: 'Barr. M. O. Danladi', date: '2025-07-14T09:00:00Z' }
+    },
+    createdAt: '2025-07-05T11:00:00Z'
   }
 ];
 
@@ -820,7 +981,8 @@ const INITIAL_SETTINGS: SystemSettings = {
   examMax: 70,
   matricYearPrefix: '26',
   resultPublished: true,
-  maintenanceMode: false
+  maintenanceMode: false,
+  gradingScale: DEFAULT_GRADING_SCALE
 };
 
 interface DataContextType {
@@ -1349,9 +1511,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const ca = Number(entry.caScore ?? 0);
       const exam = Number(entry.examScore ?? 0);
       const total = ca + exam;
-      const { grade, gradePoint, remark } = computeGrade(total);
+      const { grade, gradePoint, remark } = computeGrade(total, settings.gradingScale);
       const cu = entry.creditUnit || 2;
-      const qp = gradePoint * cu;
+      const qp = parseFloat((gradePoint * cu).toFixed(2));
 
       const existingIndex = updatedResults.findIndex(
         r => r.studentId === entry.studentId && r.courseId === entry.courseId && r.session === entry.session
@@ -1510,9 +1672,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!existing) return;
 
     const total = (updates.caScore ?? existing.caScore) + (updates.examScore ?? existing.examScore);
-    const { grade, gradePoint, remark } = computeGrade(total);
+    const { grade, gradePoint, remark } = computeGrade(total, settings.gradingScale);
     const cu = updates.creditUnit ?? existing.creditUnit;
-    const qp = gradePoint * cu;
+    const qp = parseFloat((gradePoint * cu).toFixed(2));
 
     const updated: ResultScore = {
       ...existing,
@@ -1745,59 +1907,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // GPA and CGPA computation according to the Nigerian NBTE standard
+  // Complete automated GPA and progressive cumulative CGPA computation
   const computeStudentSemesterSummary = (
     studentId: string, 
     session: string, 
     semester: '1st Semester' | '2nd Semester'
   ): SemesterResultSummary => {
     const student = students.find(s => s.id === studentId);
-    const semesterScores = results.filter(
-      r => r.studentId === studentId && r.session === session && r.semester === semester
-    );
 
-    const totalCU = semesterScores.reduce((acc, curr) => acc + (curr.creditUnit || 0), 0);
-    const totalQP = semesterScores.reduce((acc, curr) => acc + (curr.qualityPoint || 0), 0);
-    const gpa = totalCU > 0 ? parseFloat((totalQP / totalCU).toFixed(2)) : 0.00;
-
-    // Check if student is Year 2 (ND2, HND2, year: 2) or has previous records
-    const isYear2 = student?.level === 'ND2' || student?.level === 'HND2' || student?.year === 2;
-    let prevCU = 0;
-    let prevQP = 0;
-    let prevCgpa = 0;
-
-    if (isYear2) {
-      // Prior-year completed results from ND1 / HND1 or previous session
-      const priorScores = results.filter(
-        r => r.studentId === studentId && (r.level === 'ND1' || r.level === 'HND1' || r.session !== session)
-      );
-      if (priorScores.length > 0) {
-        prevCU = priorScores.reduce((acc, curr) => acc + (curr.creditUnit || 0), 0);
-        prevQP = priorScores.reduce((acc, curr) => acc + (curr.qualityPoint || 0), 0);
-        prevCgpa = prevCU > 0 ? parseFloat((prevQP / prevCU).toFixed(2)) : 0;
-      }
-
-      // If student has explicit previous CGPA from student information, use that baseline
-      if (student?.previousCgpa && student.previousCgpa > 0) {
-        prevCgpa = student.previousCgpa;
-        prevCU = student.previousCreditUnits && student.previousCreditUnits > 0 ? student.previousCreditUnits : (prevCU > 0 ? prevCU : 36);
-        prevQP = student.previousQualityPoints && student.previousQualityPoints > 0 
-          ? student.previousQualityPoints 
-          : parseFloat((prevCgpa * prevCU).toFixed(2));
-      } else if (prevCU === 0) {
-        // Default baseline for Year 2 if not yet set
-        prevCgpa = 3.40;
-        prevCU = 36;
-        prevQP = parseFloat((3.40 * 36).toFixed(2));
-      }
-    }
-
-    const cumCU = prevCU + totalCU;
-    const cumQP = parseFloat((prevQP + totalQP).toFixed(2));
-    const cgpa = cumCU > 0 ? parseFloat((cumQP / cumCU).toFixed(2)) : gpa;
-
-    const classification = computeClassification(cgpa);
-    const remark = computeAcademicStanding(gpa);
+    // Call unified progression calculation engine
+    const progression = calculateAcademicProgression({
+      student,
+      targetLevel: student?.level,
+      targetSemester: semester,
+      targetSession: session,
+      allResults: results,
+      customGradingScale: settings.gradingScale
+    });
 
     return {
       id: `sem_res_${studentId}_${session}_${semester}`,
@@ -1808,19 +1934,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       semester,
       level: student?.level || 'ND1',
       programme: student?.programme || '',
-      totalCreditUnits: totalCU,
-      totalQualityPoints: totalQP,
-      gpa,
-      cgpa,
-      previousCgpa: isYear2 ? prevCgpa : undefined,
-      previousCreditUnits: isYear2 ? prevCU : undefined,
-      previousQualityPoints: isYear2 ? prevQP : undefined,
-      currentGpa: gpa,
-      currentCgpa: cgpa,
-      totalCreditUnitsCumulative: cumCU,
-      totalQualityPointsCumulative: cumQP,
-      remark,
-      classification
+      programmeType: progression.programmeType,
+      totalCreditUnits: progression.currentCreditUnits,
+      totalQualityPoints: progression.currentQualityPoints,
+      gpa: progression.currentGpa,
+      cgpa: progression.cumulativeCgpa,
+      previousCgpa: progression.previousCgpa,
+      previousCgpaText: progression.previousCgpaText,
+      previousCreditUnits: progression.previousCreditUnits,
+      previousQualityPoints: progression.previousQualityPoints,
+      currentGpa: progression.currentGpa,
+      currentCgpa: progression.cumulativeCgpa,
+      totalCreditUnitsCumulative: progression.cumulativeCreditUnits,
+      totalQualityPointsCumulative: progression.cumulativeQualityPoints,
+      remark: progression.standing,
+      classification: progression.classification,
+      progressionHistory: progression.history
     };
   };
 

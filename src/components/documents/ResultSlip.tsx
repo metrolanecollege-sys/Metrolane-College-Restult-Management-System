@@ -144,22 +144,15 @@ export const ResultSlip: React.FC<ResultSlipProps> = ({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
     doc.setTextColor(26, 26, 46);
-    if (summary.previousCgpa) {
-      doc.text(`Total Units: ${summary.totalCreditUnits}`, 18, summaryY + 5.5);
-      doc.text(`Total QP: ${summary.totalQualityPoints.toFixed(1)}`, 54, summaryY + 5.5);
-      doc.text(`Prev CGPA (Yr 1): ${summary.previousCgpa.toFixed(2)}`, 88, summaryY + 5.5);
-      doc.text(`Sem GPA: ${summary.gpa.toFixed(2)}`, 134, summaryY + 5.5);
-      doc.text(`Current CGPA: ${summary.cgpa.toFixed(2)}`, 168, summaryY + 5.5);
-    } else {
-      doc.text(`Total Credit Units: ${summary.totalCreditUnits}`, 20, summaryY + 6);
-      doc.text(`Total Quality Points: ${summary.totalQualityPoints.toFixed(2)}`, 65, summaryY + 6);
-      doc.text(`Semester GPA: ${summary.gpa.toFixed(2)}`, 120, summaryY + 6);
-      doc.text(`Cumulative CGPA: ${summary.cgpa.toFixed(2)}`, 160, summaryY + 6);
-    }
+    doc.text(`Total Units: ${summary.totalCreditUnitsCumulative}`, 16, summaryY + 5.5);
+    doc.text(`Total QP: ${summary.totalQualityPointsCumulative.toFixed(1)}`, 48, summaryY + 5.5);
+    doc.text(`Prev CGPA: ${summary.previousCgpaText || (summary.previousCgpa ? summary.previousCgpa.toFixed(2) : 'N/A')}`, 80, summaryY + 5.5);
+    doc.text(`Sem GPA: ${summary.gpa.toFixed(2)}`, 128, summaryY + 5.5);
+    doc.text(`Cum CGPA: ${summary.cgpa.toFixed(2)}`, 164, summaryY + 5.5);
 
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     doc.setTextColor(232, 96, 28);
-    doc.text(`Classification: ${summary.classification.toUpperCase()}`, 18, summaryY + 11);
+    doc.text(`Classification: ${summary.classification.toUpperCase()}`, 16, summaryY + 11);
     doc.text(`Academic Standing: ${summary.remark === 'Pass' ? 'GOOD STANDING (PASS)' : summary.remark}`, 120, summaryY + 11);
 
     // Signatures Section
@@ -343,41 +336,80 @@ export const ResultSlip: React.FC<ResultSlipProps> = ({
             </table>
           </div>
 
-          {/* Academic Calculation Performance Summary */}
-          <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 my-6 relative z-10">
-            <div className={`grid grid-cols-2 ${summary.previousCgpa ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} gap-3 text-center`}>
-              <div className="border-r border-amber-200/80 last:border-0">
-                <span className="text-[11px] font-semibold uppercase text-amber-800 block">Total Credit Units</span>
-                <span className="text-lg font-black text-gray-900">{summary.totalCreditUnits}</span>
+          {/* Three Core Academic Performance Summary Cards */}
+          <div className="bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-purple-50/60 border border-amber-200 rounded-xl p-4 my-6 relative z-10">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center mb-3">
+              {/* Previous CGPA */}
+              <div className="bg-white p-3 rounded-lg border border-amber-200 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase text-amber-800 block">Previous CGPA</span>
+                <span className="text-xl font-black text-amber-900 font-mono mt-0.5 block">
+                  {summary.previousCgpaText || (summary.previousCgpa ? summary.previousCgpa.toFixed(2) : 'N/A')}
+                </span>
+                <span className="text-[10px] text-gray-500 block mt-0.5">
+                  {summary.previousCgpaText === 'N/A' ? 'First Semester Baseline' : 'Prior Completed Semesters'}
+                </span>
               </div>
-              <div className="border-r border-amber-200/80 last:border-0">
-                <span className="text-[11px] font-semibold uppercase text-amber-800 block">Total Quality Points</span>
-                <span className="text-lg font-black text-gray-900">{summary.totalQualityPoints.toFixed(2)}</span>
+
+              {/* Current Semester GPA */}
+              <div className="bg-white p-3 rounded-lg border border-orange-200 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase text-[#E8601C] block">Current Semester GPA</span>
+                <span className="text-xl font-black text-[#E8601C] font-mono mt-0.5 block">{summary.gpa.toFixed(2)}</span>
+                <span className="text-[10px] text-gray-500 block mt-0.5">
+                  {summary.totalCreditUnits} Credit Units • {summary.totalQualityPoints.toFixed(1)} QP
+                </span>
               </div>
-              {summary.previousCgpa ? (
-                <div className="border-r border-amber-200/80 last:border-0">
-                  <span className="text-[11px] font-semibold uppercase text-amber-800 block">Previous CGPA (Yr 1)</span>
-                  <span className="text-xl font-black text-amber-900">{summary.previousCgpa.toFixed(2)}</span>
-                </div>
-              ) : null}
-              <div className="border-r border-amber-200/80 last:border-0">
-                <span className="text-[11px] font-semibold uppercase text-amber-800 block">Semester GPA</span>
-                <span className="text-xl font-black text-[#E8601C]">{summary.gpa.toFixed(2)}</span>
-              </div>
-              <div>
-                <span className="text-[11px] font-semibold uppercase text-[#5B4FC4] block">Current CGPA</span>
-                <span className="text-xl font-black text-[#5B4FC4]">{summary.cgpa.toFixed(2)}</span>
+
+              {/* Cumulative CGPA */}
+              <div className="bg-white p-3 rounded-lg border border-purple-200 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase text-[#5B4FC4] block">Cumulative CGPA</span>
+                <span className="text-xl font-black text-[#5B4FC4] font-mono mt-0.5 block">{summary.cgpa.toFixed(2)}</span>
+                <span className="text-[10px] text-purple-700 font-bold block mt-0.5 uppercase">{summary.classification}</span>
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-amber-200/60 flex items-center justify-between text-xs font-semibold px-2">
+
+            <div className="pt-2.5 border-t border-amber-200/60 flex items-center justify-between text-xs font-semibold px-2">
               <span className="text-gray-700">
                 Academic Standing: <strong className="text-emerald-700 uppercase">{summary.remark === 'Pass' ? 'Good Standing' : summary.remark}</strong>
               </span>
               <span className="text-gray-700">
-                Classification: <strong className="text-[#E8601C] uppercase">{summary.classification}</strong>
+                Total Attempted: <strong>{summary.totalCreditUnitsCumulative} Units</strong> (<strong>{summary.totalQualityPointsCumulative.toFixed(1)} Total QP</strong>)
               </span>
             </div>
           </div>
+
+          {/* Academic Progression History Section on Slip */}
+          {summary.progressionHistory && summary.progressionHistory.length > 0 && (
+            <div className="my-5 border border-gray-200 rounded-xl overflow-hidden relative z-10">
+              <div className="bg-gray-100 px-3 py-1.5 text-[11px] font-black text-gray-700 uppercase tracking-wider flex justify-between items-center">
+                <span>Academic Progression History ({summary.programmeType || 'ND'} Programme)</span>
+                <span className="text-[10px] font-semibold text-gray-500">Official Progressive Record</span>
+              </div>
+              <table className="w-full text-[11px] text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 text-gray-600 uppercase text-[9px] border-b border-gray-200 font-bold">
+                    <th className="py-1.5 px-3">Level</th>
+                    <th className="py-1.5 px-3">Semester</th>
+                    <th className="py-1.5 px-3 text-center">Units</th>
+                    <th className="py-1.5 px-3 text-center">Quality Points</th>
+                    <th className="py-1.5 px-3 text-center">Semester GPA</th>
+                    <th className="py-1.5 px-3 text-center">Cumulative CGPA</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {summary.progressionHistory.map((item, idx) => (
+                    <tr key={idx} className={item.isCurrent ? 'bg-orange-50/20 font-bold' : ''}>
+                      <td className="py-1.5 px-3 font-bold text-gray-900">{item.level}</td>
+                      <td className="py-1.5 px-3 text-gray-700">{item.semesterLabel}</td>
+                      <td className="py-1.5 px-3 text-center">{item.creditUnits}</td>
+                      <td className="py-1.5 px-3 text-center text-gray-600">{item.qualityPoints.toFixed(1)}</td>
+                      <td className="py-1.5 px-3 text-center font-mono font-bold text-[#E8601C]">{item.gpa.toFixed(2)}</td>
+                      <td className="py-1.5 px-3 text-center font-mono font-black text-[#5B4FC4]">{item.cgpa.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* Digital Signatures Section (Three Authorized Signatories) */}
           <div className="pt-8 pb-4 border-t-2 border-gray-200 grid grid-cols-3 gap-6 text-center text-xs relative z-10">

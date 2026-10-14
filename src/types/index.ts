@@ -115,6 +115,16 @@ export type ResultApprovalStatus =
   | 'exam_officer_approved' 
   | 'published';
 
+export type GradeType = 'A' | 'AB' | 'B' | 'BC' | 'C' | 'CD' | 'D' | 'E' | 'F';
+
+export interface GradeScaleBand {
+  min: number;
+  max: number;
+  grade: GradeType;
+  gradePoint: number;
+  remark: 'Pass' | 'Fail';
+}
+
 export interface ResultScore {
   id: string;
   studentId: string;
@@ -131,8 +141,8 @@ export interface ResultScore {
   caScore: number; // 0-30
   examScore: number; // 0-70
   totalScore: number; // ca + exam
-  grade: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
-  gradePoint: number; // 4.0, 3.5, 3.0, 2.5, 2.0, 0.0
+  grade: GradeType;
+  gradePoint: number; // 4.0, 3.5, 3.25, 3.0, 2.75, 2.5, 2.25, 2.0, 0.0
   qualityPoint: number; // gradePoint * creditUnit
   remark: 'Pass' | 'Fail';
   isCarryover: boolean;
@@ -148,6 +158,18 @@ export interface ResultScore {
   updatedAt?: string;
 }
 
+export interface AcademicProgressionItem {
+  level: string; // "ND 1", "ND 2", "HND 1", "HND 2"
+  semester: '1st Semester' | '2nd Semester';
+  semesterLabel: 'First Semester' | 'Second Semester';
+  session?: string;
+  creditUnits: number;
+  qualityPoints: number;
+  gpa: number;
+  cgpa: number;
+  isCurrent?: boolean;
+}
+
 export interface SemesterResultSummary {
   id: string;
   studentId: string;
@@ -157,19 +179,22 @@ export interface SemesterResultSummary {
   semester: '1st Semester' | '2nd Semester';
   level: string;
   programme: string;
+  programmeType?: 'ND' | 'HND';
   totalCreditUnits: number;
   totalQualityPoints: number;
   gpa: number;
   cgpa: number;
   previousCgpa?: number;
+  previousCgpaText: string; // e.g. "N/A" or "3.42"
   previousCreditUnits?: number;
   previousQualityPoints?: number;
-  currentGpa?: number;
-  currentCgpa?: number;
+  currentGpa: number;
+  currentCgpa: number;
   totalCreditUnitsCumulative: number;
   totalQualityPointsCumulative: number;
   remark: 'Pass' | 'Probation' | 'Withdraw';
   classification: 'Distinction' | 'Upper Credit' | 'Lower Credit' | 'Pass' | 'Fail';
+  progressionHistory?: AcademicProgressionItem[];
 }
 
 export interface AcademicSession {
@@ -230,4 +255,5 @@ export interface SystemSettings {
   matricYearPrefix: string;
   resultPublished: boolean;
   maintenanceMode: boolean;
+  gradingScale?: GradeScaleBand[];
 }

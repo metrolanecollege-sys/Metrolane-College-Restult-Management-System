@@ -276,7 +276,10 @@ export const HodPortal: React.FC<HodPortalProps> = ({ activeTab, onSelectTab }) 
                         <td className="py-2.5 px-3 text-center font-bold text-gray-900">{r.totalScore}</td>
                         <td className="py-2.5 px-3 text-center">
                           <span className={`px-2 py-0.5 rounded text-[11px] font-black ${
-                            r.grade === 'F' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'
+                            r.grade === 'F' ? 'bg-red-100 text-red-700' : 
+                            r.grade === 'A' || r.grade === 'AB' ? 'bg-emerald-100 text-emerald-800' :
+                            r.grade === 'B' || r.grade === 'BC' ? 'bg-blue-100 text-blue-800' :
+                            'bg-amber-100 text-amber-800'
                           }`}>
                             {r.grade}
                           </span>

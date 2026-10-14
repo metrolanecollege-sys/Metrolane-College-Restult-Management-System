@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { ResultSlip } from '../documents/ResultSlip';
 import { StudentRecord } from '../../types';
+import { computeClassification } from '../../utils/academic';
 import { 
   GraduationCap, 
   KeyRound, 
@@ -187,14 +188,14 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ activeTab, onSelec
               <span className="text-xs text-gray-500">{settings.currentSession} ({settings.currentSemester})</span>
             </div>
 
-            {/* Previous CGPA for Year 2 */}
+            {/* Previous CGPA */}
             <div className="bg-white p-5 rounded-xl border border-amber-200 bg-amber-50/30 shadow-xs">
-              <span className="text-[11px] text-amber-800 font-bold uppercase block">Previous CGPA (Yr 1)</span>
+              <span className="text-[11px] text-amber-800 font-bold uppercase block">Previous CGPA</span>
               <span className="text-2xl font-black text-amber-900 block mt-1">
-                {studentSummary.previousCgpa ? studentSummary.previousCgpa.toFixed(2) : 'N/A (Yr 1)'}
+                {studentSummary.previousCgpaText}
               </span>
               <span className="text-xs text-amber-700 font-semibold">
-                {studentSummary.previousCreditUnits ? `${studentSummary.previousCreditUnits} Prev Units` : 'Initial Year'}
+                {studentSummary.previousCgpaText === 'N/A' ? 'First Semester (ND1/HND1)' : `${studentSummary.previousCreditUnits || 18} Completed Units`}
               </span>
             </div>
 
@@ -416,29 +417,154 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ activeTab, onSelec
                 </table>
               </div>
 
-              {/* Performance Cards */}
-              <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-xs">
-                <div>
-                  <span className="text-gray-500 uppercase text-[10px] font-bold block">Credit Units</span>
-                  <span className="text-lg font-black text-gray-900">{studentSummary.totalCreditUnits}</span>
+              {/* Three Required Performance Summary Cards (Orange-and-White Theme) */}
+              <div className="my-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Card A: Previous CGPA */}
+                  <div className="bg-white border-2 border-amber-200 rounded-xl p-5 shadow-xs relative overflow-hidden group hover:border-[#F47B20] transition">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-black uppercase text-amber-800 tracking-wider">
+                        Previous CGPA
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                        {studentSummary.previousCgpaText === 'N/A' ? 'First Semester' : 'Prior Semesters'}
+                      </span>
+                    </div>
+                    <div className="text-3xl font-black text-amber-950 font-mono tracking-tight mt-1">
+                      {studentSummary.previousCgpaText}
+                    </div>
+                    <p className="text-[11px] text-gray-500 mt-2">
+                      {studentSummary.previousCgpaText === 'N/A' 
+                        ? 'Initial semester (ND 1 / HND 1). No previous records.' 
+                        : `Cumulative CGPA from completed previous semesters.`}
+                    </p>
+                  </div>
+
+                  {/* Card B: Current Semester GPA */}
+                  <div className="bg-white border-2 border-[#F47B20]/40 rounded-xl p-5 shadow-xs relative overflow-hidden group hover:border-[#F47B20] transition">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-black uppercase text-[#E8601C] tracking-wider">
+                        Current Semester GPA
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-[#E8601C] border border-orange-200">
+                        {studentSummary.totalCreditUnits} Credit Units
+                      </span>
+                    </div>
+                    <div className="text-3xl font-black text-[#E8601C] font-mono tracking-tight mt-1">
+                      {studentSummary.gpa.toFixed(2)}
+                    </div>
+                    <p className="text-[11px] text-gray-500 mt-2">
+                      Quality Points: <strong>{studentSummary.totalQualityPoints.toFixed(2)}</strong> across {studentResults.length} registered courses.
+                    </p>
+                  </div>
+
+                  {/* Card C: Cumulative CGPA */}
+                  <div className="bg-gradient-to-br from-white to-purple-50/50 border-2 border-purple-300 rounded-xl p-5 shadow-xs relative overflow-hidden group hover:border-purple-500 transition">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-black uppercase text-[#5B4FC4] tracking-wider">
+                        Cumulative CGPA
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-200 uppercase">
+                        {studentSummary.classification}
+                      </span>
+                    </div>
+                    <div className="text-3xl font-black text-[#5B4FC4] font-mono tracking-tight mt-1">
+                      {studentSummary.cgpa.toFixed(2)}
+                    </div>
+                    <p className="text-[11px] text-gray-500 mt-2">
+                      Weighted total: <strong>{studentSummary.totalQualityPointsCumulative.toFixed(2)} QP</strong> ÷ <strong>{studentSummary.totalCreditUnitsCumulative} Units</strong>.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-gray-500 uppercase text-[10px] font-bold block">Quality Points</span>
-                  <span className="text-lg font-black text-gray-900">{studentSummary.totalQualityPoints.toFixed(2)}</span>
+
+                {/* Additional academic metrics bar */}
+                <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-4 text-gray-600">
+                    <span>Attempted Units: <strong>{studentSummary.totalCreditUnitsCumulative}</strong></span>
+                    <span>Total Quality Points: <strong>{studentSummary.totalQualityPointsCumulative.toFixed(2)}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">Academic Standing:</span>
+                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase ${
+                      studentSummary.remark === 'Pass' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {studentSummary.remark === 'Pass' ? 'Good Standing (Pass)' : studentSummary.remark}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-amber-800 uppercase text-[10px] font-bold block">Previous CGPA</span>
-                  <span className="text-lg font-black text-amber-900">
-                    {studentSummary.previousCgpa ? studentSummary.previousCgpa.toFixed(2) : 'N/A (Yr 1)'}
+              </div>
+
+              {/* 6. Academic Performance History Section */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h4 className="text-xs md:text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-[#F47B20]" />
+                      Academic Performance History ({studentSummary.programmeType || 'ND'} Programme)
+                    </h4>
+                    <p className="text-[11px] text-gray-500">
+                      Progressive semester GPA and cumulative CGPA across completed academic levels.
+                    </p>
+                  </div>
+                  <span className="px-2.5 py-1 bg-orange-50 border border-orange-200 text-[#E8601C] rounded-lg text-[10px] font-bold">
+                    Independent {studentSummary.programmeType || 'ND'} Records
                   </span>
                 </div>
-                <div>
-                  <span className="text-gray-500 uppercase text-[10px] font-bold block">Semester GPA</span>
-                  <span className="text-lg font-black text-[#E8601C]">{studentSummary.gpa.toFixed(2)}</span>
-                </div>
-                <div>
-                  <span className="text-[#5B4FC4] uppercase text-[10px] font-bold block">Current CGPA</span>
-                  <span className="text-lg font-black text-[#5B4FC4]">{studentSummary.cgpa.toFixed(2)}</span>
+
+                <div className="overflow-x-auto rounded-xl border border-gray-200">
+                  <table className="w-full text-xs text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100 text-gray-700 uppercase text-[10px] tracking-wider border-b border-gray-200 font-bold">
+                        <th className="py-2.5 px-3">Academic Level</th>
+                        <th className="py-2.5 px-3">Semester</th>
+                        <th className="py-2.5 px-3 text-center">Credit Units</th>
+                        <th className="py-2.5 px-3 text-center">Quality Points</th>
+                        <th className="py-2.5 px-3 text-center bg-orange-50/50 text-[#E8601C] border-x border-orange-100">
+                          GPA
+                        </th>
+                        <th className="py-2.5 px-3 text-center bg-purple-50/50 text-[#5B4FC4] border-r border-purple-100">
+                          Cumulative CGPA
+                        </th>
+                        <th className="py-2.5 px-3 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 font-medium">
+                      {studentSummary.progressionHistory && studentSummary.progressionHistory.length > 0 ? (
+                        studentSummary.progressionHistory.map((item, idx) => (
+                          <tr key={idx} className={item.isCurrent ? 'bg-orange-50/30 font-bold' : 'hover:bg-gray-50'}>
+                            <td className="py-2.5 px-3 font-bold text-gray-900">
+                              {item.level}
+                              {item.isCurrent && (
+                                <span className="ml-1.5 px-1.5 py-0.5 rounded text-[9px] bg-[#F47B20] text-white">
+                                  Current
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-gray-700">{item.semesterLabel}</td>
+                            <td className="py-2.5 px-3 text-center font-bold text-gray-800">{item.creditUnits}</td>
+                            <td className="py-2.5 px-3 text-center text-gray-600">{item.qualityPoints.toFixed(2)}</td>
+                            <td className="py-2.5 px-3 text-center font-mono font-bold text-[#E8601C] bg-orange-50/30 border-x border-orange-100">
+                              {item.gpa.toFixed(2)}
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-mono font-black text-[#5B4FC4] bg-purple-50/30 border-r border-purple-100">
+                              {item.cgpa.toFixed(2)}
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                {computeClassification(item.cgpa)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={7} className="py-4 text-center text-gray-400">
+                            Academic progression records will appear here as results are processed.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>

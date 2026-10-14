@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useAuth, DEFAULT_ACCOUNTS } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { SignaturePad } from '../common/SignaturePad';
-import { UserRole, Course, Programme, StudentRecord, UserProfile } from '../../types';
-import { NIGERIAN_STATES } from '../../utils/academic';
+import { UserRole, Course, Programme, StudentRecord, UserProfile, GradeScaleBand } from '../../types';
+import { NIGERIAN_STATES, DEFAULT_GRADING_SCALE } from '../../utils/academic';
 import { 
   Users, 
   BookOpen, 
@@ -1547,6 +1547,84 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ activeTab, onSelectTab
                   onChange={(e) => updateSettings({ examMax: Number(e.target.value) || 70 })}
                   className="w-full p-2.5 border border-gray-300 rounded-lg outline-none font-bold"
                 />
+              </div>
+            </div>
+
+            {/* Configurable Institutional Grading Scale (NBTE 9-Point System) */}
+            <div className="pt-4 mt-2 border-t border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <Award className="w-4 h-4 text-[#F47B20]" />
+                    Institutional Grading Policy &amp; Scale (9-Point Scale)
+                  </h4>
+                  <p className="text-[11px] text-gray-500">
+                    Defines the automated GPA and cumulative CGPA conversion for ND and HND results.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ gradingScale: DEFAULT_GRADING_SCALE })}
+                  className="px-2.5 py-1 text-[11px] font-bold text-[#F47B20] bg-orange-50 hover:bg-orange-100 rounded-lg transition border border-orange-200 cursor-pointer"
+                >
+                  Reset to NBTE Standard
+                </button>
+              </div>
+
+              <div className="overflow-x-auto rounded-lg border border-gray-200 mt-3">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 text-gray-700 uppercase text-[10px] tracking-wider font-bold border-b border-gray-200">
+                      <th className="py-2 px-3">Score Range</th>
+                      <th className="py-2 px-3 text-center">Grade</th>
+                      <th className="py-2 px-3 text-center">Grade Point</th>
+                      <th className="py-2 px-3 text-center">Remark</th>
+                      <th className="py-2 px-3 text-right">Min Threshold</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {(settings.gradingScale || DEFAULT_GRADING_SCALE).map((band, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50/70">
+                        <td className="py-1.5 px-3 font-semibold text-gray-800">
+                          {band.min} – {band.max}%
+                        </td>
+                        <td className="py-1.5 px-3 text-center">
+                          <span className={`px-2 py-0.5 rounded font-black text-[10px] ${
+                            band.grade === 'F' ? 'bg-red-100 text-red-700' :
+                            band.grade === 'A' || band.grade === 'AB' ? 'bg-emerald-100 text-emerald-800' :
+                            band.grade === 'B' || band.grade === 'BC' ? 'bg-blue-100 text-blue-800' :
+                            'bg-amber-100 text-amber-800'
+                          }`}>
+                            {band.grade}
+                          </span>
+                        </td>
+                        <td className="py-1.5 px-3 text-center font-mono font-bold text-gray-800">
+                          {band.gradePoint.toFixed(2)}
+                        </td>
+                        <td className="py-1.5 px-3 text-center">
+                          <span className={band.remark === 'Pass' ? 'text-emerald-700 font-bold' : 'text-red-600 font-bold'}>
+                            {band.remark}
+                          </span>
+                        </td>
+                        <td className="py-1.5 px-3 text-right">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={band.min}
+                            onChange={(e) => {
+                              const newMin = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                              const currentScale = [...(settings.gradingScale || DEFAULT_GRADING_SCALE)];
+                              currentScale[idx] = { ...currentScale[idx], min: newMin };
+                              updateSettings({ gradingScale: currentScale });
+                            }}
+                            className="w-16 p-1 text-center font-mono font-bold bg-gray-50 border border-gray-300 rounded outline-none text-xs focus:border-[#F47B20] focus:bg-white"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

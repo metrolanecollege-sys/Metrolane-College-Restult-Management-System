@@ -200,7 +200,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
           }
 
           const total = Math.min(100, Math.max(0, caVal + examVal));
-          const { grade } = computeGrade(total);
+          const { grade } = computeGrade(total, settings.gradingScale);
 
           // Find matches in existing students
           const enrolledMatch = courseStudents.find(

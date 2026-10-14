@@ -498,8 +498,11 @@ export const RegistrarPortal: React.FC<RegistrarPortalProps> = ({ activeTab, onS
                     <td className="py-2.5 px-3 text-center text-gray-600">{r.examScore}</td>
                     <td className="py-2.5 px-3 text-center font-black text-gray-900">{r.totalScore}</td>
                     <td className="py-2.5 px-3 text-center font-bold">
-                      <span className={`px-2 py-0.5 rounded text-[11px] ${
-                        r.grade === 'F' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-black ${
+                        r.grade === 'F' ? 'bg-red-100 text-red-700' :
+                        r.grade === 'A' || r.grade === 'AB' ? 'bg-emerald-100 text-emerald-800' :
+                        r.grade === 'B' || r.grade === 'BC' ? 'bg-blue-100 text-blue-800' :
+                        'bg-amber-100 text-amber-800'
                       }`}>
                         {r.grade}
                       </span>

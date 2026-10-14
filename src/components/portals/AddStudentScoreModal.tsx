@@ -71,7 +71,7 @@ export const AddStudentScoreModal: React.FC<AddStudentScoreModalProps> = ({
   const parsedCA = Math.min(30, Math.max(0, parseFloat(caScore) || 0));
   const parsedExam = Math.min(70, Math.max(0, parseFloat(examScore) || 0));
   const currentTotal = parsedCA + parsedExam;
-  const { grade, gradePoint, remark } = computeGrade(currentTotal);
+  const { grade, gradePoint, remark } = computeGrade(currentTotal, settings.gradingScale);
   const currentQP = parseFloat((gradePoint * course.creditUnit).toFixed(2));
 
   // Progressive CGPA computation

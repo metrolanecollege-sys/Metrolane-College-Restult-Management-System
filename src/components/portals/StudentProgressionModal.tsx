@@ -1,5 +1,6 @@
 import React from 'react';
 import { Course, StudentRecord } from '../../types';
+import { useData } from '../../context/DataContext';
 import { computeGrade, computeProgressionCGPA, computeClassification } from '../../utils/academic';
 import { 
   Calculator, 
@@ -27,15 +28,17 @@ export const StudentProgressionModal: React.FC<StudentProgressionModalProps> = (
   examScore,
   onClose
 }) => {
+  const { settings, results } = useData();
   const isYear2 = student.level === 'ND2' || student.level === 'HND2' || student.year === 2;
   const totalScore = Math.min(100, Math.max(0, Number(caScore || 0) + Number(examScore || 0)));
-  const { grade, gradePoint, remark } = computeGrade(totalScore);
+  const { grade, gradePoint, remark } = computeGrade(totalScore, settings.gradingScale);
   const currentQP = parseFloat((gradePoint * course.creditUnit).toFixed(2));
 
   const progression = computeProgressionCGPA(
     student,
     course.creditUnit,
-    currentQP
+    currentQP,
+    results.filter(r => r.studentId === student.id)
   );
 
   const classification = computeClassification(progression.cumulativeCgpa);
