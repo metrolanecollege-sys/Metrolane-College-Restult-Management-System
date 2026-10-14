@@ -120,23 +120,32 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const text = event.target?.result as string;
+        let text = (event.target?.result as string) || '';
+        // Remove UTF-8 Byte Order Mark (BOM) added by Microsoft Excel
+        if (text.charCodeAt(0) === 0xFEFF) {
+          text = text.slice(1);
+        }
+
         const lines = text.split(/\r\n|\n/).filter(line => line.trim().length > 0);
 
         if (lines.length < 2) {
           throw new Error('CSV file appears to be empty or has no data rows.');
         }
 
+        const firstLine = lines[0];
+        // Auto-detect delimiter: comma, semicolon (common in Excel regional settings), or tab
+        const delimiter = (firstLine.includes(';') && !firstLine.includes(',')) ? ';' : (firstLine.includes('\t') && !firstLine.includes(',')) ? '\t' : ',';
+
         const headerLine = lines[0].toLowerCase();
-        const headerParts = headerLine.split(',').map(h => h.trim().replace(/['"]/g, ''));
+        const headerParts = headerLine.split(delimiter).map(h => h.trim().replace(/['"]/g, ''));
 
         // Identify column indices
-        const matricIdx = headerParts.findIndex(h => h.includes('matric') || h.includes('reg') || h.includes('id'));
-        const nameIdx = headerParts.findIndex(h => h.includes('name'));
-        const levelIdx = headerParts.findIndex(h => h.includes('level') || h.includes('year'));
+        const matricIdx = headerParts.findIndex(h => h.includes('matric') || h.includes('reg') || h.includes('id') || h.includes('number'));
+        const nameIdx = headerParts.findIndex(h => h.includes('name') || h.includes('student'));
+        const levelIdx = headerParts.findIndex(h => h.includes('level') || h.includes('year') || h.includes('programme'));
         const prevCgpaIdx = headerParts.findIndex(h => h.includes('prev') || h.includes('cgpa'));
-        const caIdx = headerParts.findIndex(h => h.includes('ca') || h.includes('test') || h.includes('assessment'));
-        const examIdx = headerParts.findIndex(h => h.includes('exam'));
+        const caIdx = headerParts.findIndex(h => h.includes('ca') || h.includes('test') || h.includes('assessment') || h.includes('continuous'));
+        const examIdx = headerParts.findIndex(h => h.includes('exam') || h.includes('examination'));
 
         const rows: ParsedCSVRow[] = [];
 
@@ -144,7 +153,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
           const rawLine = lines[i].trim();
           if (!rawLine) continue;
 
-          // Simple CSV line splitter handling quoted strings
+          // Delimiter line splitter handling quoted strings
           const parts: string[] = [];
           let currentPart = '';
           let inQuotes = false;
@@ -152,7 +161,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
             const char = rawLine[charIdx];
             if (char === '"' || char === "'") {
               inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
+            } else if (char === delimiter && !inQuotes) {
               parts.push(currentPart.trim().replace(/^["']|["']$/g, ''));
               currentPart = '';
             } else {

@@ -455,22 +455,43 @@ export const LecturerPortal: React.FC<LecturerPortalProps> = ({ activeTab, onSel
 
           {/* Main Score Entry Table */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="p-4 bg-gray-50 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="w-4 h-4 text-[#F47B20]" />
-                <h3 className="text-xs md:text-sm font-bold text-gray-800">
-                  Student Score Sheet ({selectedCourse?.courseCode} - {selectedCourse?.courseTitle})
-                </h3>
+                <div>
+                  <h3 className="text-xs md:text-sm font-bold text-gray-800">
+                    Student Score Sheet ({selectedCourse?.courseCode} - {selectedCourse?.courseTitle})
+                  </h3>
+                  <p className="text-[11px] text-gray-500">
+                    Automated GPA &amp; Continuous CGPA Calculation • {courseStudents.length} Students Enrolled
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-3 text-[11px] text-gray-500">
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" />
-                  Previous CGPA (Yr 1)
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block" />
-                  Current CGPA (Continuing)
-                </span>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Direct Add students to Score sheet button */}
+                <button
+                  type="button"
+                  disabled={isLocked}
+                  onClick={() => setShowAddStudentModal(true)}
+                  className="px-3 py-1.5 text-xs font-black text-white bg-[#F47B20] hover:bg-[#E8601C] rounded-lg transition inline-flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
+                  title="Add student directly to this score entry sheet"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  Add students to Score sheet
+                </button>
+
+                {/* Import CSV File */}
+                <button
+                  type="button"
+                  disabled={isLocked}
+                  onClick={() => setShowCSVModal(true)}
+                  className="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white hover:bg-gray-100 rounded-lg transition inline-flex items-center gap-1.5 border border-gray-300 disabled:opacity-50 cursor-pointer"
+                  title="Import student scores from an Excel / CSV spreadsheet"
+                >
+                  <Upload className="w-3.5 h-3.5 text-gray-600" />
+                  Import CSV File
+                </button>
               </div>
             </div>
 
@@ -630,6 +651,37 @@ export const LecturerPortal: React.FC<LecturerPortalProps> = ({ activeTab, onSel
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Score Sheet Table Footer */}
+            <div className="p-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-3 text-gray-600 font-medium">
+                <span>Total Enrolled: <strong className="text-gray-900">{courseStudents.length} Students</strong></span>
+                <span className="text-gray-300">•</span>
+                <span>Course Credit Unit: <strong className="text-[#F47B20]">{selectedCourse?.creditUnit || 3} Units</strong></span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={isLocked}
+                  onClick={() => setShowAddStudentModal(true)}
+                  className="px-3 py-1.5 text-xs font-bold text-[#F47B20] hover:text-white hover:bg-[#F47B20] bg-orange-50 border border-orange-200 rounded-lg transition inline-flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  Add students to Score sheet
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isLocked}
+                  onClick={() => setShowCSVModal(true)}
+                  className="px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-200 bg-gray-100 border border-gray-200 rounded-lg transition inline-flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  <Upload className="w-3.5 h-3.5 text-gray-600" />
+                  Import CSV File
+                </button>
+              </div>
             </div>
           </div>
         </div>

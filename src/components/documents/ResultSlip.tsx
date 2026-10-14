@@ -155,8 +155,48 @@ export const ResultSlip: React.FC<ResultSlipProps> = ({
     doc.text(`Classification: ${summary.classification.toUpperCase()}`, 16, summaryY + 11);
     doc.text(`Academic Standing: ${summary.remark === 'Pass' ? 'GOOD STANDING (PASS)' : summary.remark}`, 120, summaryY + 11);
 
+    // Academic Progression History Table in PDF
+    let sigY = summaryY + 28;
+    if (summary.progressionHistory && summary.progressionHistory.length > 0) {
+      const histY = summaryY + 18;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(26, 26, 46);
+      doc.text(`ACADEMIC PROGRESSION HISTORY (${(summary.programmeType || 'ND').toUpperCase()} PROGRAMME)`, 15, histY);
+
+      // Header row
+      doc.setFillColor(240, 240, 240);
+      doc.rect(15, histY + 2, pageWidth - 30, 5, 'F');
+      doc.setFontSize(7);
+      doc.text('Level', 18, histY + 5.5);
+      doc.text('Semester', 45, histY + 5.5);
+      doc.text('Credit Units', 105, histY + 5.5);
+      doc.text('Quality Points', 130, histY + 5.5);
+      doc.text('GPA', 160, histY + 5.5);
+      doc.text('Cumulative CGPA', 178, histY + 5.5);
+
+      let curHistY = histY + 7;
+      doc.setFont('helvetica', 'normal');
+      summary.progressionHistory.forEach(item => {
+        if (item.isCurrent) {
+          doc.setFillColor(254, 243, 199);
+          doc.rect(15, curHistY, pageWidth - 30, 4.5, 'F');
+        }
+        doc.text(item.level + (item.isCurrent ? ' *' : ''), 18, curHistY + 3.2);
+        doc.text(item.semesterLabel, 45, curHistY + 3.2);
+        doc.text(String(item.creditUnits), 105, curHistY + 3.2);
+        doc.text(item.qualityPoints.toFixed(1), 130, curHistY + 3.2);
+        doc.setFont('helvetica', 'bold');
+        doc.text(item.gpa.toFixed(2), 160, curHistY + 3.2);
+        doc.text(item.cgpa.toFixed(2), 178, curHistY + 3.2);
+        doc.setFont('helvetica', 'normal');
+        curHistY += 4.5;
+      });
+
+      sigY = curHistY + 10;
+    }
+
     // Signatures Section
-    const sigY = summaryY + 28;
     doc.setTextColor(50, 50, 50);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
