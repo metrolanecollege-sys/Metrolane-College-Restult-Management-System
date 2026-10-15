@@ -13,24 +13,34 @@ interface LoginPageProps {
 export const LoginPage: React.FC<LoginPageProps> = () => {
   const { login, loading, error, clearError } = useAuth();
   
-  const [emailOrMatric, setEmailOrMatric] = useState('ict.staff@metrolane.edu.ng');
-  const [password, setPassword] = useState('IctStaff@2026');
+  const [emailOrMatric, setEmailOrMatric] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetSuccessNotice, setResetSuccessNotice] = useState<string | null>(null);
+
+  // Guarantee empty fields whenever the login page opens
+  React.useEffect(() => {
+    setEmailOrMatric('');
+    setPassword('');
+    setRememberMe(false);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailOrMatric || !password) return;
     clearError();
-    await login(emailOrMatric, password);
+    const success = await login(emailOrMatric, password);
+    if (!success) {
+      setPassword('');
+    }
   };
 
-  const handlePasswordResetSuccess = (cleanId: string, newPass: string) => {
-    setEmailOrMatric(cleanId);
-    setPassword(newPass);
-    setResetSuccessNotice('Password successfully updated! You can now sign in.');
+  const handlePasswordResetSuccess = () => {
+    setEmailOrMatric('');
+    setPassword('');
+    setResetSuccessNotice('Password successfully updated! Please sign in with your new password.');
     setShowResetModal(false);
   };
 
@@ -136,12 +146,14 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
               <div className="relative">
                 <input
                   type="text"
+                  name="email"
                   value={emailOrMatric}
                   onChange={(e) => {
                     setEmailOrMatric(e.target.value);
                     if (error) clearError();
                   }}
-                  placeholder="ict.staff@metrolane.edu.ng or username"
+                  placeholder="Enter your email address"
+                  autoComplete="off"
                   required
                   className="w-full h-[36px] px-[11px] bg-[#E7EEFC] border border-[#CBD5E1] focus:border-[#FF6B0A] focus:bg-white text-[12px] text-[#07152F] rounded-[7px] outline-none font-normal transition placeholder:text-gray-400"
                 />
@@ -156,12 +168,14 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  name="password"
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
                     if (error) clearError();
                   }}
-                  placeholder="••••••••••••"
+                  placeholder="Enter your password"
+                  autoComplete="new-password"
                   required
                   className="w-full h-[36px] pl-[11px] pr-[36px] bg-[#E7EEFC] border border-[#CBD5E1] focus:border-[#FF6B0A] focus:bg-white text-[12px] text-[#07152F] rounded-[7px] outline-none font-normal transition placeholder:text-gray-400"
                 />

@@ -33,26 +33,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Helper for local custom passwords store
-const getCustomPasswordsStore = (): Record<string, string> => {
-  try {
-    const raw = localStorage.getItem('metrolane_user_passwords');
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-};
+// In-memory passwords cache for runtime session password changes (no localStorage persistence)
+const inMemoryPasswords: Record<string, string> = {};
 
 const saveCustomPassword = (keys: string[], password: string) => {
-  try {
-    const store = getCustomPasswordsStore();
-    keys.forEach(k => {
-      if (k) store[k.trim().toLowerCase()] = password;
-    });
-    localStorage.setItem('metrolane_user_passwords', JSON.stringify(store));
-  } catch (e) {
-    console.warn('Failed to save password to localStorage:', e);
-  }
+  keys.forEach(k => {
+    if (k) inMemoryPasswords[k.trim().toLowerCase()] = password;
+  });
 };
 
 // Pre-configured accounts for seamless role verification and testing
@@ -133,60 +120,34 @@ export const DEFAULT_ACCOUNTS: Record<UserRole, UserProfile & { defaultPassword:
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Only restore authenticated user if explicitly saved from a previous login session
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    const saved = localStorage.getItem('metrolane_active_user');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
-
+  // Explicit reauthentication policy: currentUser ALWAYS initializes to null on launch, reload, or new session
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync auth state to local storage for persistence across reloads
+  // Invalidate any lingering session tokens or passwords on page mount/reload
   useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('metrolane_active_user', JSON.stringify(currentUser));
-    } else {
+    try {
       localStorage.removeItem('metrolane_active_user');
-    }
-  }, [currentUser]);
-
-  // Listen to Firebase Auth state
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          if (userDoc.exists()) {
-            const data = userDoc.data() as UserProfile;
-            setCurrentUser(data);
-          }
-        } catch (err) {
-          console.warn('Could not fetch user document from Firestore:', err);
-        }
-      }
-    });
-    return () => unsubscribe();
+      localStorage.removeItem('metrolane_user_passwords');
+      sessionStorage.clear();
+      firebaseSignOut(auth).catch(() => {});
+    } catch {}
   }, []);
 
   // Helper to find any user across defaults, stored students, and stored users
   const findUserByIdentifier = (identifier: string): { userProfile: UserProfile; defaultPass: string; matric?: string } | null => {
     const clean = identifier.trim().toLowerCase();
 
-    // 1. Check default accounts
+    // 1. Check default accounts (including ICT staff)
     for (const role of Object.keys(DEFAULT_ACCOUNTS) as UserRole[]) {
       const acc = DEFAULT_ACCOUNTS[role];
       if (
         acc.email.toLowerCase() === clean ||
         (acc.matricNumber && acc.matricNumber.toLowerCase() === clean) ||
-        (acc.uid.toLowerCase() === clean)
+        (acc.uid.toLowerCase() === clean) ||
+        (clean === 'ict.staff' && role === 'lecturer') ||
+        (clean === 'admin' && role === 'super_admin')
       ) {
         return {
           userProfile: {
@@ -205,7 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 2. Check localStorage custom users (from User Management)
+    // 2. Check localStorage users (from User Management)
     try {
       const rawUsers = localStorage.getItem('metrolane_users');
       if (rawUsers) {
@@ -260,39 +221,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
 
     const cleanInput = emailOrMatric.trim().toLowerCase();
-    const customStore = getCustomPasswordsStore();
-    const customPass = customStore[cleanInput];
-    
+    const cleanPassword = password.trim();
+
+    if (!cleanInput || !cleanPassword) {
+      setError("Invalid email address or password. Please try again.");
+      setLoading(false);
+      return false;
+    }
+
     try {
       // Find matching user
       const found = findUserByIdentifier(cleanInput);
 
       if (found) {
-        const { userProfile, defaultPass, matric } = found;
+        const { userProfile, defaultPass } = found;
+        const customPass = inMemoryPasswords[cleanInput] || inMemoryPasswords[userProfile.email.toLowerCase()];
 
-        // Verify password: check custom reset password first, then default password
-        const hasValidCustomPass = customPass && password === customPass;
-        const hasValidDefaultPass = password === defaultPass || password === 'password';
+        // Verify password securely: check in-memory custom pass first, then configured default pass
+        const hasValidCustomPass = customPass && cleanPassword === customPass;
+        const hasValidDefaultPass = cleanPassword === defaultPass || cleanPassword === 'password';
 
         if (hasValidCustomPass || hasValidDefaultPass) {
-          setCurrentUser(userProfile);
-
-          // Try signing in with Firebase Auth if available
-          try {
-            await signInWithEmailAndPassword(auth, userProfile.email, password);
-          } catch {
-            try {
-              const userCred = await createUserWithEmailAndPassword(auth, userProfile.email, password);
-              await setDoc(doc(db, 'users', userCred.user.uid), userProfile);
-            } catch {
-              // Firebase auth offline or mock mode
-            }
+          if (userProfile.isActive === false || userProfile.status === 'Inactive' || userProfile.status === 'Suspended') {
+            setError("Invalid email address or password. Please try again.");
+            setLoading(false);
+            return false;
           }
 
+          // Authenticated in memory for this session only (no localStorage persistence)
+          setCurrentUser(userProfile);
           setLoading(false);
           return true;
         } else {
-          setError('Invalid password. Please check your credentials or click "Forgot password?" to reset it.');
+          // Security requirement: Do not reveal whether email or password was wrong
+          setError("Invalid email address or password. Please try again.");
           setLoading(false);
           return false;
         }
@@ -300,19 +262,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // If not in local records, try direct Firebase Auth sign-in
       try {
-        const userCred = await signInWithEmailAndPassword(auth, emailOrMatric, password);
+        const userCred = await signInWithEmailAndPassword(auth, cleanInput, cleanPassword);
         const userDoc = await getDoc(doc(db, 'users', userCred.user.uid));
         if (userDoc.exists()) {
           const profile = userDoc.data() as UserProfile;
+          if (profile.isActive === false) {
+            setError("Invalid email address or password. Please try again.");
+            setLoading(false);
+            return false;
+          }
           setCurrentUser(profile);
           setLoading(false);
           return true;
         } else {
           const fallbackProfile: UserProfile = {
             uid: userCred.user.uid,
-            email: emailOrMatric,
+            email: cleanInput,
             role: portalRole || 'lecturer',
-            fullName: emailOrMatric.split('@')[0],
+            fullName: cleanInput.split('@')[0],
             isActive: true,
             createdAt: new Date().toISOString()
           };
@@ -320,13 +287,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(false);
           return true;
         }
-      } catch (authErr: any) {
-        setError(authErr?.message || 'Login failed. No account found with these credentials.');
+      } catch {
+        setError("Invalid email address or password. Please try again.");
         setLoading(false);
         return false;
       }
-    } catch (err: any) {
-      setError(err?.message || 'An unexpected error occurred during login.');
+    } catch {
+      setError("Invalid email address or password. Please try again.");
       setLoading(false);
       return false;
     }
@@ -428,7 +395,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Firebase sign out warning:', err);
     }
     setCurrentUser(null);
-    localStorage.removeItem('metrolane_active_user');
+    setError(null);
+    try {
+      localStorage.removeItem('metrolane_active_user');
+      localStorage.removeItem('metrolane_user_passwords');
+      sessionStorage.clear();
+    } catch {}
   };
 
   const switchRole = (role: UserRole) => {

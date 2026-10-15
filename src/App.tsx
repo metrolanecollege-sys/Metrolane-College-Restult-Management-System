@@ -36,7 +36,19 @@ const MainAppContent: React.FC = () => {
     }
   }, [currentRole]);
 
-  // If user is not logged in, show authentic split-screen login page
+  // Prevent access to protected pages using browser's Back button when unauthenticated
+  React.useEffect(() => {
+    if (!currentUser) {
+      window.history.replaceState(null, '', window.location.pathname);
+      const handlePopState = () => {
+        window.history.replaceState(null, '', window.location.pathname);
+      };
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+    }
+  }, [currentUser]);
+
+  // If user is not logged in, always show authentic split-screen login page
   if (!currentUser) {
     return (
       <LoginPage
