@@ -79,6 +79,7 @@ export interface Course {
   id: string;
   courseCode: string; // "CHT 101"
   courseTitle: string;
+  department?: string;
   creditUnit: number;
   courseType: 'Core' | 'Elective' | 'General Studies';
   programme: string;

@@ -195,12 +195,12 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
                       required
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="e.g. lecturer@metrolane.edu.ng or 26/MET/CHT/001"
+                      placeholder="e.g. ict.staff@metrolane.edu.ng or 26/MET/CHT/001"
                       className="w-full pl-3 pr-3 py-2 bg-[#E7EEFC] border border-[#CBD5E1] focus:border-[#FF6B0A] focus:bg-white text-xs text-gray-800 rounded-lg outline-none font-medium transition"
                     />
                   </div>
                   <span className="text-[10px] text-gray-500 mt-1 block">
-                    All users (Staff, Lecturers, HODs, Admins, and Students) can reset passwords.
+                    All users (ICT Staff, HODs, Admins, and Students) can reset passwords.
                   </span>
                 </div>
               )}

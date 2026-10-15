@@ -1,5 +1,6 @@
 import React from 'react';
 import { UserRole } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 import { 
   LayoutDashboard, 
   Users, 
@@ -19,7 +20,12 @@ import {
   ClipboardList,
   CheckCircle,
   Clock,
-  UserCheck
+  UserCheck,
+  UserPlus,
+  Calculator,
+  TrendingUp,
+  Printer,
+  LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -90,9 +96,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       case 'lecturer':
         return [
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { id: 'score_entry', label: 'Score Entry Sheet', icon: FileSpreadsheet },
-          { id: 'assigned_courses', label: 'My Assigned Courses', icon: BookOpen },
-          { id: 'submissions', label: 'Submission History', icon: Send },
+          { id: 'student_registration', label: 'Student Registration', icon: UserPlus },
+          { id: 'student_management', label: 'Student Management', icon: Users },
+          { id: 'course_management', label: 'Course Management', icon: BookOpen },
+          { id: 'course_registration', label: 'Course Registration', icon: ClipboardList },
+          { id: 'result_entry', label: 'Result Entry', icon: FileSpreadsheet },
+          { id: 'result_computation', label: 'Result Computation', icon: Calculator },
+          { id: 'student_results', label: 'Student Results', icon: GraduationCap },
+          { id: 'gpa_cgpa_management', label: 'GPA & CGPA Management', icon: TrendingUp },
+          { id: 'academic_sessions', label: 'Academic Sessions', icon: Calendar },
+          { id: 'reports_analytics', label: 'Reports & Analytics', icon: BarChart3 },
+          { id: 'print_results', label: 'Print Results', icon: Printer },
+          { id: 'settings', label: 'Profile & Settings', icon: Settings },
         ];
       case 'student':
         return [
@@ -107,6 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  const { logout } = useAuth();
   const navItems = getNavItems();
 
   return (
@@ -134,12 +150,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Navigation Items */}
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           <div className="px-3 mb-2 text-[10px] font-black uppercase text-gray-400 tracking-wider">
-            {currentRole.replace('_', ' ')} Navigation
+            {currentRole === 'lecturer' ? 'ICT Staff Navigation' : `${currentRole.replace('_', ' ')} Navigation`}
           </div>
 
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
+            // Also treat legacy 'score_entry' as matching 'result_entry'
+            const isActive = activeTab === item.id || (item.id === 'result_entry' && activeTab === 'score_entry');
             return (
               <button
                 key={item.id}
@@ -170,8 +187,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           })}
         </div>
 
-        {/* Bottom System Info */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50 text-[11px] text-gray-500">
+        {/* Bottom System Info and Logout */}
+        <div className="p-3 border-t border-gray-100 bg-gray-50 text-[11px] text-gray-500">
+          <button
+            type="button"
+            onClick={async () => {
+              await logout();
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition cursor-pointer mb-2"
+          >
+            <LogOut className="w-4 h-4 text-red-500" />
+            <span>Logout</span>
+          </button>
           <div className="font-bold text-gray-800">Metrolane RMS v2.4</div>
           <div className="text-[10px] text-gray-400">Database: Cloud Firestore</div>
         </div>

@@ -49,7 +49,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, activeTab, onSe
       case 'registrar': return 'Registrar';
       case 'exam_officer': return 'Exam Officer';
       case 'hod': return 'Head of Dept (HOD)';
-      case 'lecturer': return 'Lecturer';
+      case 'lecturer': return 'ICT Staff';
       case 'student': return 'Student';
       default: return 'User';
     }

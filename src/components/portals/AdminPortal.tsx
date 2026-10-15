@@ -732,7 +732,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ activeTab, onSelectTab
                 <option value="registrar">Registrar</option>
                 <option value="exam_officer">Exam Officer</option>
                 <option value="hod">HOD</option>
-                <option value="lecturer">Lecturer</option>
+                <option value="lecturer">ICT User (Results &amp; Scores)</option>
                 <option value="student">Student</option>
               </select>
             </div>
@@ -1676,7 +1676,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ activeTab, onSelectTab
                     <option value="registrar">Registrar</option>
                     <option value="exam_officer">Exam Officer</option>
                     <option value="hod">HOD</option>
-                    <option value="lecturer">Lecturer</option>
+                    <option value="lecturer">ICT User (Results &amp; Scores)</option>
                     <option value="student">Student</option>
                   </select>
                 </div>
@@ -1795,7 +1795,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ activeTab, onSelectTab
                     <option value="registrar">Registrar</option>
                     <option value="exam_officer">Exam Officer</option>
                     <option value="hod">Head of Department (HOD)</option>
-                    <option value="lecturer">Lecturer</option>
+                    <option value="lecturer">ICT User (Results &amp; Scores)</option>
                     <option value="student">Student</option>
                   </select>
                 </div>

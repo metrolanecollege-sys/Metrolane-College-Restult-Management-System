@@ -13,8 +13,8 @@ interface LoginPageProps {
 export const LoginPage: React.FC<LoginPageProps> = () => {
   const { login, loading, error, clearError } = useAuth();
   
-  const [emailOrMatric, setEmailOrMatric] = useState('amina.bello@metrolane.edu.ng');
-  const [password, setPassword] = useState('Lecturer@2026');
+  const [emailOrMatric, setEmailOrMatric] = useState('ict.staff@metrolane.edu.ng');
+  const [password, setPassword] = useState('IctStaff@2026');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [showResetModal, setShowResetModal] = useState(false);
@@ -61,13 +61,13 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
         {/* Main Heading: approx 113px top */}
         <div className="mt-8 lg:mt-[63px]">
           <h1 className="text-[34px] font-bold text-[#FFFFFF] leading-[40px] tracking-normal">
-            Lecturer Result<br />
+            ICT Result<br />
             Management System
           </h1>
 
           {/* Description */}
           <p className="mt-3.5 text-[13px] text-white leading-[21px] max-w-[410px] font-normal opacity-95">
-            Secure workspace for lecturers and authorized academic staff to enter, compute, and manage student academic results with confidence.
+            Secure workspace for authorized ICT staff to register students, manage courses, enter academic results, compute GPA and CGPA, and maintain accurate student academic records.
           </p>
         </div>
 
@@ -100,7 +100,7 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
 
           {/* Supporting Text */}
           <p className="text-[13px] text-[#64748B] mt-1 leading-[21px]">
-            Sign in to continue to the Lecturer Result<br />
+            Sign in to continue to the ICT Result<br />
             Management System.
           </p>
 
@@ -141,7 +141,7 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
                     setEmailOrMatric(e.target.value);
                     if (error) clearError();
                   }}
-                  placeholder="lecturer@metrolane.edu.ng or matric number"
+                  placeholder="ict.staff@metrolane.edu.ng or username"
                   required
                   className="w-full h-[36px] px-[11px] bg-[#E7EEFC] border border-[#CBD5E1] focus:border-[#FF6B0A] focus:bg-white text-[12px] text-[#07152F] rounded-[7px] outline-none font-normal transition placeholder:text-gray-400"
                 />
@@ -234,7 +234,7 @@ export const LoginPage: React.FC<LoginPageProps> = () => {
         <div className="w-full max-w-[460px] lg:ml-[106px] mx-auto mt-auto pb-8 pt-6">
           <div className="w-full h-[1px] bg-[#F1F5F9] mb-[20px]" />
           <p className="text-[11px] text-[#94A3B8] leading-[15px]">
-            Lecturer and authorized academic staff access only. Student accounts are not permitted on this portal.
+            Authorized ICT staff access only. Student accounts are not permitted on this portal.
           </p>
         </div>
       </div>

@@ -106,16 +106,16 @@ export const DEFAULT_ACCOUNTS: Record<UserRole, UserProfile & { defaultPassword:
     defaultPassword: 'HodCht@2026'
   },
   lecturer: {
-    uid: 'lecturer_001',
-    email: 'amina.bello@metrolane.edu.ng',
+    uid: 'ict_staff_001',
+    email: 'ict.staff@metrolane.edu.ng',
     role: 'lecturer',
-    fullName: 'Dr. Amina Bello, FWACP',
+    fullName: 'Mal. Kabiru Haruna (ICT Staff)',
     phone: '+234 808 111 2222',
-    department: 'Community Health Technology',
+    department: 'ICT & Academic Computing Division',
     isActive: true,
     mustChangePassword: false,
     createdAt: '2026-01-05T08:00:00Z',
-    defaultPassword: 'Lecturer@2026'
+    defaultPassword: 'IctStaff@2026'
   },
   student: {
     uid: 'student_001',
