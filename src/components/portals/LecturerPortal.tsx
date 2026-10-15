@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { Course, ResultScore, StudentRecord } from '../../types';
@@ -21,7 +21,9 @@ import {
   Calculator,
   Layers,
   Download,
-  Info
+  Info,
+  Loader2,
+  X
 } from 'lucide-react';
 
 interface LecturerPortalProps {
@@ -31,7 +33,16 @@ interface LecturerPortalProps {
 
 export const LecturerPortal: React.FC<LecturerPortalProps> = ({ activeTab, onSelectTab }) => {
   const { currentUser } = useAuth();
-  const { courses, students, results, saveResultScores, settings, courseRegistrations } = useData();
+  const { 
+    courses, 
+    students, 
+    results, 
+    saveResultScores, 
+    settings, 
+    courseRegistrations,
+    addStudent,
+    enrollStudentInCourse
+  } = useData();
 
   const currentSection = activeTab || 'dashboard';
 
@@ -86,6 +97,39 @@ export const LecturerPortal: React.FC<LecturerPortalProps> = ({ activeTab, onSel
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showCSVModal, setShowCSVModal] = useState(false);
   const [progressionStudent, setProgressionStudent] = useState<StudentRecord | null>(null);
+
+  // Native CSV file upload & notification toast state
+  const csvFileInputRef = useRef<HTMLInputElement>(null);
+  const [isImportingCSV, setIsImportingCSV] = useState(false);
+  const [csvFileName, setCsvFileName] = useState('');
+  const [toast, setToast] = useState<{ id: string; type: 'success' | 'error'; title: string; message: string } | null>(null);
+
+  // Auto-dismiss toast after 5 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  // Direct trigger for native file picker restricted to .csv
+  const handleTriggerCSVImport = () => {
+    if (isLocked) {
+      setToast({
+        id: String(Date.now()),
+        type: 'error',
+        title: 'Score Sheet Locked',
+        message: 'Scores for this course have already been submitted or approved and cannot be altered.'
+      });
+      return;
+    }
+    if (csvFileInputRef.current) {
+      csvFileInputRef.current.value = '';
+      csvFileInputRef.current.click();
+    }
+  };
 
   // Sync draft state if course changes
   const handleCourseChange = (newCourseId: string) => {
@@ -184,9 +228,189 @@ export const LecturerPortal: React.FC<LecturerPortalProps> = ({ activeTab, onSel
     setSubmitSuccess(
       `Student ${newStudent.matricNumber} (${newStudent.firstName} ${newStudent.lastName}) added to score sheet with ${newStudent.level} scores!`
     );
+    setToast({
+      id: String(Date.now()),
+      type: 'success',
+      title: 'Student Added Successfully',
+      message: `${newStudent.firstName} ${newStudent.lastName} (${newStudent.matricNumber}) added with CA: ${ca}, Exam: ${exam}.`
+    });
   };
 
-  // Callback when CSV scores are imported
+  // Handler for Native CSV File Picker
+  const handleNativeCSVFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCsvFileName(file.name);
+
+    // 1. Verify .csv extension restriction
+    const isCsv = file.name.toLowerCase().endsWith('.csv') || file.type === 'text/csv' || file.type === 'application/vnd.ms-excel';
+    if (!isCsv) {
+      setToast({
+        id: String(Date.now()),
+        type: 'error',
+        title: 'Invalid File Format',
+        message: `"${file.name}" is not a valid CSV file. Please select a native comma-separated (.csv) file.`
+      });
+      return;
+    }
+
+    // 2. Start Loading Spinner
+    setIsImportingCSV(true);
+
+    try {
+      const text = await file.text();
+      // Brief visual pause so lecturer clearly sees processing feedback
+      await new Promise(r => setTimeout(r, 650));
+
+      let cleanText = text;
+      // Strip UTF-8 BOM if present
+      if (cleanText.charCodeAt(0) === 0xFEFF) {
+        cleanText = cleanText.slice(1);
+      }
+
+      const lines = cleanText.split(/\r\n|\n/).filter(line => line.trim().length > 0);
+      if (lines.length < 2) {
+        throw new Error('CSV file appears empty or contains no student data rows under the headers.');
+      }
+
+      const firstLine = lines[0];
+      const delimiter = (firstLine.includes(';') && !firstLine.includes(',')) ? ';' : (firstLine.includes('\t') && !firstLine.includes(',')) ? '\t' : ',';
+      const headerParts = firstLine.toLowerCase().split(delimiter).map(h => h.trim().replace(/['"]/g, ''));
+
+      const matricIdx = headerParts.findIndex(h => h.includes('matric') || h.includes('reg') || h.includes('id') || h.includes('number'));
+      const nameIdx = headerParts.findIndex(h => h.includes('name') || h.includes('student'));
+      const levelIdx = headerParts.findIndex(h => h.includes('level') || h.includes('year') || h.includes('programme'));
+      const prevCgpaIdx = headerParts.findIndex(h => h.includes('prev') || h.includes('cgpa'));
+      const caIdx = headerParts.findIndex(h => h.includes('ca') || h.includes('test') || h.includes('assessment') || h.includes('continuous'));
+      const examIdx = headerParts.findIndex(h => h.includes('exam') || h.includes('examination'));
+
+      const newDrafts: Record<string, { ca: number; exam: number }> = {};
+      const newlyEnrolled: StudentRecord[] = [];
+      let importedRowsCount = 0;
+
+      for (let i = 1; i < lines.length; i++) {
+        const rawLine = lines[i].trim();
+        if (!rawLine) continue;
+
+        // Quote-aware splitting
+        const parts: string[] = [];
+        let currentPart = '';
+        let inQuotes = false;
+        for (let charIdx = 0; charIdx < rawLine.length; charIdx++) {
+          const char = rawLine[charIdx];
+          if (char === '"' || char === "'") {
+            inQuotes = !inQuotes;
+          } else if (char === delimiter && !inQuotes) {
+            parts.push(currentPart.trim().replace(/^["']|["']$/g, ''));
+            currentPart = '';
+          } else {
+            currentPart += char;
+          }
+        }
+        parts.push(currentPart.trim().replace(/^["']|["']$/g, ''));
+
+        if (parts.length < 2) continue;
+
+        const matric = (matricIdx !== -1 ? parts[matricIdx] : parts[0])?.trim();
+        if (!matric) continue;
+
+        const rawName = (nameIdx !== -1 ? parts[nameIdx] : (parts.length > 3 ? parts[1] : ''))?.trim() || `Student ${matric}`;
+        const rawLevel = (levelIdx !== -1 ? parts[levelIdx] : (selectedCourse?.level || 'ND1'))?.trim() || selectedCourse?.level || 'ND1';
+        const rawPrevCgpa = prevCgpaIdx !== -1 ? parseFloat(parts[prevCgpaIdx]) : undefined;
+
+        let caVal = 0;
+        let examVal = 0;
+        if (caIdx !== -1 && parts[caIdx] !== undefined) {
+          caVal = parseFloat(parts[caIdx]) || 0;
+        } else if (parts.length >= 3) {
+          caVal = parseFloat(parts[parts.length - 2]) || 0;
+        }
+        if (examIdx !== -1 && parts[examIdx] !== undefined) {
+          examVal = parseFloat(parts[examIdx]) || 0;
+        } else if (parts.length >= 2) {
+          examVal = parseFloat(parts[parts.length - 1]) || 0;
+        }
+
+        caVal = Math.min(30, Math.max(0, caVal));
+        examVal = Math.min(70, Math.max(0, examVal));
+
+        let student = students.find(s => s.matricNumber.trim().toLowerCase() === matric.toLowerCase());
+        if (!student) {
+          const nameParts = rawName.split(/\s+/).filter(Boolean);
+          const firstName = nameParts[0] || 'Student';
+          const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : matric;
+          const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : undefined;
+          const isYear2 = rawLevel.includes('2');
+
+          const created = await addStudent({
+            matricNumber: matric,
+            firstName,
+            middleName,
+            lastName,
+            gender: 'Female',
+            department: selectedCourse?.programme.includes('Community') ? 'Community Health Technology' : 'Health Technician',
+            programme: selectedCourse?.programme || 'ND in Community Health Technology',
+            programmeCode: (selectedCourse?.programmeCode as any) || 'CHT',
+            level: (rawLevel as any) || selectedCourse?.level || 'ND1',
+            year: isYear2 ? 2 : 1,
+            previousCgpa: isYear2 ? (rawPrevCgpa || 3.40) : undefined,
+            admissionYear: isYear2 ? '2025' : '2026',
+            currentSession: settings.currentSession,
+            currentSemester: settings.currentSemester,
+            status: 'active',
+            clearanceStatus: { bursary: true, library: true, department: true },
+            stateOfOrigin: 'Kano',
+            lga: 'Nasarawa',
+            phone: '+234 800 000 0000',
+            email: `${matric.toLowerCase().replace(/[^a-z0-9]/g, '.')}@student.metrolane.edu.ng`
+          });
+          student = created;
+        }
+
+        if (student) {
+          await enrollStudentInCourse(
+            student.id,
+            student.matricNumber,
+            selectedCourse!.id,
+            settings.currentSession,
+            settings.currentSemester,
+            selectedCourse!.level
+          );
+          newDrafts[student.id] = { ca: caVal, exam: examVal };
+          newlyEnrolled.push(student);
+          importedRowsCount++;
+        }
+      }
+
+      if (importedRowsCount === 0) {
+        throw new Error('No valid student matric numbers or scores were found in the CSV.');
+      }
+
+      setDraftScores(prev => ({ ...prev, ...newDrafts }));
+      setDynamicallyEnrolledIds(prev => [...new Set([...prev, ...newlyEnrolled.map(s => s.id)])]);
+      setIsImportingCSV(false);
+
+      // Trigger Success Notification Toast
+      setToast({
+        id: String(Date.now()),
+        type: 'success',
+        title: 'CSV Import Completed Successfully',
+        message: `Imported scores for ${importedRowsCount} student${importedRowsCount > 1 ? 's' : ''} into ${selectedCourse?.courseCode} score sheet.`
+      });
+    } catch (err: any) {
+      setIsImportingCSV(false);
+      // Trigger Failure Notification Toast
+      setToast({
+        id: String(Date.now()),
+        type: 'error',
+        title: 'CSV Import Failed',
+        message: err?.message || 'Could not parse the CSV file. Please check file format.'
+      });
+    }
+  };
+
+  // Callback when CSV scores are imported via modal
   const handleCSVImportComplete = (
     newDrafts: Record<string, { ca: number; exam: number }>,
     addedStudents: StudentRecord[]
@@ -204,6 +428,12 @@ export const LecturerPortal: React.FC<LecturerPortalProps> = ({ activeTab, onSel
     setSubmitSuccess(
       `Successfully imported ${totalCount} student scores from CSV (${addedStudents.length} newly enrolled).`
     );
+    setToast({
+      id: String(Date.now()),
+      type: 'success',
+      title: 'CSV Scores Imported',
+      message: `Imported scores for ${totalCount} students into ${selectedCourse?.courseCode}.`
+    });
   };
 
   return (
@@ -397,15 +627,16 @@ export const LecturerPortal: React.FC<LecturerPortalProps> = ({ activeTab, onSel
                 Add Student to Score Sheet
               </button>
 
-              {/* Import CSV Scores Button */}
+              {/* Import CSV File Button (Triggers native file picker) */}
               <button
                 type="button"
-                disabled={isLocked}
-                onClick={() => setShowCSVModal(true)}
+                disabled={isLocked || isImportingCSV}
+                onClick={handleTriggerCSVImport}
                 className="px-3.5 py-2 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition inline-flex items-center gap-1.5 border border-gray-200 disabled:opacity-50 cursor-pointer"
+                title="Select a .csv file from your computer to import student scores"
               >
                 <Upload className="w-3.5 h-3.5 text-gray-600" />
-                Import CSV Scores
+                Import CSV File
               </button>
 
               {/* Download CSV Template */}
@@ -481,13 +712,13 @@ export const LecturerPortal: React.FC<LecturerPortalProps> = ({ activeTab, onSel
                   Add students to Score sheet
                 </button>
 
-                {/* Import CSV File */}
+                {/* Import CSV File (Triggers native file picker) */}
                 <button
                   type="button"
-                  disabled={isLocked}
-                  onClick={() => setShowCSVModal(true)}
+                  disabled={isLocked || isImportingCSV}
+                  onClick={handleTriggerCSVImport}
                   className="px-3 py-1.5 text-xs font-bold text-gray-700 bg-white hover:bg-gray-100 rounded-lg transition inline-flex items-center gap-1.5 border border-gray-300 disabled:opacity-50 cursor-pointer"
-                  title="Import student scores from an Excel / CSV spreadsheet"
+                  title="Import student scores from a .csv file"
                 >
                   <Upload className="w-3.5 h-3.5 text-gray-600" />
                   Import CSV File
@@ -521,8 +752,38 @@ export const LecturerPortal: React.FC<LecturerPortalProps> = ({ activeTab, onSel
                 <tbody className="divide-y divide-gray-100 font-medium">
                   {courseStudents.length === 0 ? (
                     <tr>
-                      <td colSpan={13} className="py-8 text-center text-gray-400">
-                        No students enrolled in this course yet. Click <strong>"Add Student to Score Sheet"</strong> or <strong>"Import CSV Scores"</strong> above to populate.
+                      <td colSpan={13} className="py-12 text-center text-gray-500">
+                        <div className="max-w-md mx-auto space-y-3">
+                          <div className="w-12 h-12 mx-auto rounded-full bg-orange-50 border border-orange-200 text-[#F47B20] flex items-center justify-center">
+                            <FileSpreadsheet className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-gray-800 text-sm">No students on this score sheet yet</div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Add students individually or import a CSV file to automatically populate scores and calculate CGPA.
+                            </p>
+                          </div>
+                          <div className="flex items-center justify-center gap-2 pt-1">
+                            <button
+                              type="button"
+                              disabled={isLocked}
+                              onClick={() => setShowAddStudentModal(true)}
+                              className="px-3.5 py-2 text-xs font-bold text-white bg-[#F47B20] hover:bg-[#E8601C] rounded-lg transition inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+                            >
+                              <UserPlus className="w-3.5 h-3.5" />
+                              Add Student to Score Sheet
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isLocked || isImportingCSV}
+                              onClick={handleTriggerCSVImport}
+                              className="px-3.5 py-2 text-xs font-bold text-gray-700 bg-white hover:bg-gray-100 rounded-lg transition inline-flex items-center gap-1.5 border border-gray-300 cursor-pointer"
+                            >
+                              <Upload className="w-3.5 h-3.5 text-gray-600" />
+                              Import CSV File
+                            </button>
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   ) : (
@@ -674,9 +935,10 @@ export const LecturerPortal: React.FC<LecturerPortalProps> = ({ activeTab, onSel
 
                 <button
                   type="button"
-                  disabled={isLocked}
-                  onClick={() => setShowCSVModal(true)}
+                  disabled={isLocked || isImportingCSV}
+                  onClick={handleTriggerCSVImport}
                   className="px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-200 bg-gray-100 border border-gray-200 rounded-lg transition inline-flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  title="Import student scores from a .csv file"
                 >
                   <Upload className="w-3.5 h-3.5 text-gray-600" />
                   Import CSV File
@@ -862,6 +1124,76 @@ export const LecturerPortal: React.FC<LecturerPortalProps> = ({ activeTab, onSel
           examScore={draftScores[progressionStudent.id]?.exam ?? 0}
           onClose={() => setProgressionStudent(null)}
         />
+      )}
+
+      {/* Hidden Native File Input (restricted to .csv) */}
+      <input
+        ref={csvFileInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        aria-label="Upload CSV File"
+        className="hidden"
+        onChange={handleNativeCSVFileChange}
+      />
+
+      {/* Native CSV Import Loading Spinner Overlay */}
+      {isImportingCSV && (
+        <div 
+          role="status"
+          aria-live="assertive"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+        >
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 max-w-sm w-full text-center space-y-4">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-[#F47B20] animate-spin" />
+            </div>
+            <div>
+              <h3 className="font-black text-gray-900 text-sm">Processing &amp; Importing CSV</h3>
+              <p className="text-xs text-gray-600 mt-1">
+                Reading <strong>{csvFileName || 'scores.csv'}</strong> and calculating GPA &amp; CGPA for {selectedCourse?.courseCode}...
+              </p>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+              <div className="bg-[#F47B20] h-1.5 rounded-full animate-pulse w-3/4 mx-auto" />
+            </div>
+            <p className="text-[11px] text-gray-400">Validating scores and updating sheets...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Notification Toast (Success / Failure) */}
+      {toast && (
+        <aside
+          role="alert"
+          aria-live="assertive"
+          className="fixed bottom-5 right-5 z-50 max-w-md w-[calc(100vw-2.5rem)] animate-in slide-in-from-bottom-5 duration-300"
+        >
+          <div className={`p-4 rounded-xl shadow-2xl border flex items-start gap-3 backdrop-blur-md ${
+            toast.type === 'success'
+              ? 'bg-emerald-50/95 border-emerald-300 text-emerald-950'
+              : 'bg-red-50/95 border-red-300 text-red-950'
+          }`}>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-xs ${
+              toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+            }`}>
+              {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+            </div>
+            <div className="flex-1 min-w-0 pt-0.5">
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="font-bold text-xs uppercase tracking-wider">{toast.title}</h4>
+                <button
+                  type="button"
+                  onClick={() => setToast(null)}
+                  aria-label="Dismiss notification"
+                  className="text-gray-400 hover:text-gray-700 p-0.5 rounded transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs mt-1 text-gray-700 leading-relaxed break-words">{toast.message}</p>
+            </div>
+          </div>
+        </aside>
       )}
     </div>
   );
